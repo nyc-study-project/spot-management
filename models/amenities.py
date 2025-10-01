@@ -6,8 +6,6 @@ from datetime import datetime
 from pydantic import BaseModel, Field, PositiveInt
 
 
-
-
 class AmenitiesBase(BaseModel):
     id: UUID = Field(
         default_factory=uuid4,
