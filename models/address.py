@@ -4,7 +4,24 @@ from typing import Optional
 from uuid import UUID, uuid4
 from datetime import datetime
 from pydantic import BaseModel, Field
+from enum import Enum
 
+class Neighborhood(str, Enum):
+    FINANCIAL_DISTRICT = "Financial District (FiDi)"
+    TRIBECA = "Tribeca"
+    SOHO = "SoHo"
+    CHINATOWN = "Chinatown"
+    LOWER_EAST_SIDE = "Lower East Side"
+    GREENWICH_VILLAGE = "Greenwich Village (incl. West Village)"
+    EAST_VILLAGE = "East Village"
+    CHELSEA = "Chelsea"
+    FLATIRON_DISTRICT = "Flatiron District"
+    MIDTOWN = "Midtown (incl. Times Square, Hell’s Kitchen, Garment District)"
+    UPPER_WEST_SIDE = "Upper West Side"
+    UPPER_EAST_SIDE = "Upper East Side"
+    HARLEM = "Harlem (Central, East, and West Harlem)"
+    WASHINGTON_HEIGHTS = "Washington Heights"
+    INWOOD = "Inwood"
 
 class AddressBase(BaseModel):
     id: UUID = Field(
@@ -15,39 +32,52 @@ class AddressBase(BaseModel):
     street: str = Field(
         ...,
         description="Street address and number.",
-        json_schema_extra={"example": "123 Main St"},
+        json_schema_extra={"example": "116th and Broadway"},
     )
     city: str = Field(
         ...,
         description="City or locality.",
         json_schema_extra={"example": "New York"},
     )
-    state: Optional[str] = Field(
-        None,
-        description="State/region code if applicable.",
+    state: str = Field(
+        ...,
+        description="State.",
         json_schema_extra={"example": "NY"},
     )
-    postal_code: Optional[str] = Field(
-        None,
-        description="Postal or ZIP code.",
-        json_schema_extra={"example": "10001"},
-    )
-    country: str = Field(
+    postal_code: str = Field(
         ...,
-        description="Country name or ISO label.",
-        json_schema_extra={"example": "USA"},
+        description="ZIP code.",
+        json_schema_extra={"example": "10027"},
     )
+    longitude: Optional[float] = Field(
+        None,
+        description="Optional longitude value.",
+        json_schema_extra={"example": -73.962459},
+    )
+    latitude: Optional[float] = Field(
+        None,
+        description="Optional latitude value.",
+        json_schema_extra={"example": 40.807415},
+    )
+    neighborhood: Neighborhood = Field(
+        ...,
+        description="Neighborhood.",
+        json_schema_extra={"example": "Harlem"},
+    )
+
 
     model_config = {
         "json_schema_extra": {
             "examples": [
                 {
                     "id": "550e8400-e29b-41d4-a716-446655440000",
-                    "street": "123 Main St",
+                    "street": "116th and Broadway",
                     "city": "New York",
                     "state": "NY",
-                    "postal_code": "10001",
-                    "country": "USA",
+                    "postal_code": "10027",
+                    "longitude": -73.962459,
+                    "latitude": 40.807415, 
+                    "neighborhood": "Harlem"
                 }
             ]
         }
@@ -60,12 +90,12 @@ class AddressCreate(AddressBase):
         "json_schema_extra": {
             "examples": [
                 {
-                    "id": "11111111-1111-4111-8111-111111111111",
-                    "street": "221B Baker St",
-                    "city": "London",
-                    "state": None,
-                    "postal_code": "NW1 6XE",
-                    "country": "UK",
+                    "id": "550e8400-e29b-41d4-a716-446655440000",
+                    "street": "116th and Broadway",
+                    "city": "New York",
+                    "state": "NY",
+                    "postal_code": "10027",
+                    "neighborhood": "Harlem"
                 }
             ]
         }
@@ -75,7 +105,7 @@ class AddressCreate(AddressBase):
 class AddressUpdate(BaseModel):
     """Partial update; address ID is taken from the path, not the body."""
     street: Optional[str] = Field(
-        None, description="Street address and number.", json_schema_extra={"example": "124 Main St"}
+        None, description="Street address and number.", json_schema_extra={"example": "116th and Broadway"}
     )
     city: Optional[str] = Field(
         None, description="City or locality.", json_schema_extra={"example": "New York"}
@@ -84,23 +114,22 @@ class AddressUpdate(BaseModel):
         None, description="State/region code if applicable.", json_schema_extra={"example": "NY"}
     )
     postal_code: Optional[str] = Field(
-        None, description="Postal or ZIP code.", json_schema_extra={"example": "10002"}
+        None, description="Postal or ZIP code.", json_schema_extra={"example": "10027"}
     )
-    country: Optional[str] = Field(
-        None, description="Country name or ISO label.", json_schema_extra={"example": "USA"}
+    neighborhood: Optional[Neighborhood] = Field(
+        None, description="Neighborhood.", json_schema_extra={"example": "Harlem"},
     )
 
     model_config = {
         "json_schema_extra": {
             "examples": [
                 {
-                    "street": "124 Main St",
+                    "street": "116th and Broadway",
                     "city": "New York",
                     "state": "NY",
-                    "postal_code": "10002",
-                    "country": "USA",
+                    "postal_code": "10027"
                 },
-                {"city": "Brooklyn"},
+                {"city": "New York"},
             ]
         }
     }
@@ -123,11 +152,13 @@ class AddressRead(AddressBase):
             "examples": [
                 {
                     "id": "550e8400-e29b-41d4-a716-446655440000",
-                    "street": "123 Main St",
+                    "street": "116th and Broadway",
                     "city": "New York",
                     "state": "NY",
-                    "postal_code": "10001",
-                    "country": "USA",
+                    "postal_code": "10027",
+                    "longitude": -73.962459,
+                    "latitude": 40.807415, 
+                    "neighborhood": "Harlem",
                     "created_at": "2025-01-15T10:20:30Z",
                     "updated_at": "2025-01-16T12:00:00Z",
                 }
