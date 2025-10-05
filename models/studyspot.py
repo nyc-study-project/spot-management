@@ -26,12 +26,14 @@ class StudySpotBase(BaseModel):
         description="Address linked to this study spot (carries a persistent Address ID).",
         json_schema_extra={
             "example":{
-                "id": "550e8400-e29b-41d4-a716-446655440000",
-                "street": "550 W 120th St",
+                "id": "550e8400-e29b-41d4-a716-446655440001",
+                "street": "116th and Broadway",
                 "city": "New York",
                 "state": "NY",
                 "postal_code": "10027",
-                "country": "USA",
+                "longitude": -73.962459,
+                "latitude": 40.807415, 
+                "neighborhood": "Harlem"
             }
         },
     )
@@ -41,11 +43,13 @@ class StudySpotBase(BaseModel):
         description="Amenities linked to this study spot (carries a persistent Amenities ID).",
         json_schema_extra={
             "example":{
-                "id": "550e8400-e29b-41d4-a716-446655440000",
-                "wifi": "eduoram",
-                "outlets": False,
-                "seating": 50,
-                "refreshments":"pastries, coffee, soda"
+                "id": "550e8400-e29b-41d4-a716-446655440002",
+                "wifi_available": True,
+                "wifi_network": "eduroam",
+                "outlets": True,
+                "seating": "1-5",
+                "refreshments":"pastries, fruits, soda",
+                "environment": ["lively", "indoor"]
             }
         },
     )
@@ -57,19 +61,23 @@ class StudySpotBase(BaseModel):
                     "id": "550e8400-e29b-41d4-a716-446655440000",
                     "name": "Joe Coffee Company: Northwest Corner",
                     "address": {
-                        "id": "550e8400-e29b-41d4-a716-446655440000",
-                        "street": "550 W 120th St",
+                        "id": "550e8400-e29b-41d4-a716-446655440001",
+                        "street": "116th and Broadway",
                         "city": "New York",
                         "state": "NY",
                         "postal_code": "10027",
-                        "country": "USA",
+                        "longitude": -73.962459,
+                        "latitude": 40.807415, 
+                        "neighborhood": "Harlem"
                     },
                     "amenity": {
-                        "id": "550e8400-e29b-41d4-a716-446655440000",
-                        "wifi": "eduoram",
-                        "outlets": False,
-                        "seating": 50,
-                        "refreshments":"pastries, coffee, soda"
+                        "id": "550e8400-e29b-41d4-a716-446655440002",
+                        "wifi_available": True,
+                        "wifi_network": "eduroam",
+                        "outlets": True,
+                        "seating": "1-5",
+                        "refreshments":"pastries, fruits, soda",
+                        "environment": ["lively", "indoor"]
                     }
                 }
             ]
@@ -83,21 +91,23 @@ class StudySpotCreate(StudySpotBase):
         "json_schema_extra": {
             "examples": [
                 {
-                    "id": "770e8400-e29b-41d4-a716-446655441234",
                     "name": "Hungarian Pastry Shop",
                     "address": {
-                        "id": "770e8400-e29b-41d4-a716-446655441234",
                         "street": "1030 Amsterdam Ave",
                         "city": "New York",
                         "state": "NY",
                         "postal_code": "10025",
-                        "country": "USA",
+                        "longitude": -73.963755,
+                        "latitude": 40.803614, 
+                        "neighborhood": "Harlem"
                     },
                     "amenity": {
-                        "id": "770e8400-e29b-41d4-a716-446655441234",
+                        "wifi_available": True,
+                        "wifi_network": "eduroam",
                         "outlets": False,
-                        "seating": 30,
-                        "refreshments": "coffee, tea, pastries"
+                        "seating": "20+",
+                        "refreshments":"pastries, coffee",
+                        "environment": ["lively", "indoor", "outdoor"]
                     }
                 }
             ]
@@ -113,12 +123,14 @@ class StudySpotUpdate(BaseModel):
         description="Update the address linked to this study spot.",
         json_schema_extra={
             "example": {
-                "id": "770e8400-e29b-41d4-a716-446655441234",
-                "street": "1030 Amsterdam Ave",
+                "id": "550e8400-e29b-41d4-a716-446655440001",
+                "street": "116th and Broadway",
                 "city": "New York",
                 "state": "NY",
-                "postal_code": "10025",
-                "country": "USA",
+                "postal_code": "10027",
+                "longitude": -73.962459,
+                "latitude": 40.807415, 
+                "neighborhood": "Harlem"
             }
         },
     )
@@ -127,41 +139,16 @@ class StudySpotUpdate(BaseModel):
         description="Update the amenities linked to this study spot.",
         json_schema_extra={
             "example": {
-                "id": "770e8400-e29b-41d4-a716-446655441234",
-                "wifi": "GuestWifi",
+                "id": "550e8400-e29b-41d4-a716-446655440002",
+                "wifi_available": True,
+                "wifi_network": "eduroam",
                 "outlets": True,
-                "seating": 30,
-                "refreshments": "coffee, tea, pastries, strudel",
+                "seating": "1-5",
+                "refreshments":"pastries, fruits, soda",
+                "environment": ["lively", "indoor"]
             }
         },
     )
-
-    model_config = {
-        "json_schema_extra": {
-            "examples": [
-                {"name": "Hungarian Pastry Shop"},
-                {
-                    "address": {
-                        "id": "770e8400-e29b-41d4-a716-446655441234",
-                        "street": "1030 Amsterdam Ave",
-                        "city": "New York",
-                        "state": "NY",
-                        "postal_code": "10025",
-                        "country": "USA",
-                    }
-                },
-                {
-                    "amenity": {
-                        "id": "770e8400-e29b-41d4-a716-446655441234",
-                        "wifi": "GuestWifi",
-                        "outlets": True,
-                        "seating": 30,
-                        "refreshments": "coffee, tea, pastries, strudel",
-                    }
-                },
-            ]
-        }
-    }
 
 
 class StudySpotRead(StudySpotBase):
@@ -183,19 +170,23 @@ class StudySpotRead(StudySpotBase):
                     "id": "99999999-9999-4999-8999-999999999999",
                     "name": "Hungarian Pastry Shop",
                     "address": {
-                        "id": "770e8400-e29b-41d4-a716-446655441234",
+                        "id": "770e8400-e29b-41d4-a716-446655441235",
                         "street": "1030 Amsterdam Ave",
                         "city": "New York",
                         "state": "NY",
                         "postal_code": "10025",
-                        "country": "USA",
+                        "longitude": -73.963755,
+                        "latitude": 40.803614, 
+                        "neighborhood": "Harlem"
                     },
                     "amenity": {
-                        "id": "770e8400-e29b-41d4-a716-446655441234",
-                        "wifi": "GuestWifi",
-                        "outlets": True,
-                        "seating": 30,
-                        "refreshments": "coffee, tea, pastries, strudel",
+                        "id": "770e8400-e29b-41d4-a716-446655441236",
+                        "wifi_available": True,
+                        "wifi_network": "eduroam",
+                        "outlets": False,
+                        "seating": "20+",
+                        "refreshments":"pastries, coffee",
+                        "environment": ["lively", "indoor", "outdoor"]
                     },
                     "created_at": "2025-01-15T10:20:30Z",
                     "updated_at": "2025-01-16T12:00:00Z",
