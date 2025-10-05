@@ -27,3 +27,4 @@ This microservice manages study spots in NYC. It provides the spot name, address
 
 # Sprint 1
 All models except hours is made. All Endpoints are created. 
+<img width="585" height="560" alt="Screenshot 2025-10-04 at 10 11 55 PM" src="https://github.com/user-attachments/assets/b4f5d4ad-2f9a-4dd1-91f6-eded626a9306" />
