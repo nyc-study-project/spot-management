@@ -12,14 +12,14 @@ class Neighborhood(str, Enum):
     SOHO = "SoHo"
     CHINATOWN = "Chinatown"
     LOWER_EAST_SIDE = "Lower East Side"
-    GREENWICH_VILLAGE = "Greenwich Village (incl. West Village)"
+    GREENWICH_VILLAGE = "West Village"
     EAST_VILLAGE = "East Village"
     CHELSEA = "Chelsea"
     FLATIRON_DISTRICT = "Flatiron District"
-    MIDTOWN = "Midtown (incl. Times Square, Hell’s Kitchen, Garment District)"
+    MIDTOWN = "Midtown"
     UPPER_WEST_SIDE = "Upper West Side"
     UPPER_EAST_SIDE = "Upper East Side"
-    HARLEM = "Harlem (Central, East, and West Harlem)"
+    HARLEM = "Harlem"
     WASHINGTON_HEIGHTS = "Washington Heights"
     INWOOD = "Inwood"
 
@@ -35,13 +35,13 @@ class AddressBase(BaseModel):
         json_schema_extra={"example": "116th and Broadway"},
     )
     city: str = Field(
-        ...,
-        description="City or locality.",
+        default="New York",
+        description="City (fixed).",
         json_schema_extra={"example": "New York"},
     )
     state: str = Field(
-        ...,
-        description="State.",
+        default="NY",
+        description="State (fixed).",
         json_schema_extra={"example": "NY"},
     )
     postal_code: str = Field(
@@ -90,7 +90,6 @@ class AddressCreate(AddressBase):
         "json_schema_extra": {
             "examples": [
                 {
-                    "id": "550e8400-e29b-41d4-a716-446655440000",
                     "street": "116th and Broadway",
                     "city": "New York",
                     "state": "NY",

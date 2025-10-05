@@ -50,7 +50,7 @@ class AmenitiesBase(BaseModel):
         json_schema_extra={"example": "pastries, fruits, soda"},
     )
     environment: list[Environment] = Field(
-        None,
+        ...,
         description="Environment of the study space",
         json_schema_extra={"example": ["lively", "indoor"]},
     )
@@ -61,7 +61,7 @@ class AmenitiesBase(BaseModel):
                 {
                     "id": "550e8400-e29b-41d4-a716-446655440000",
                     "wifi_available": True,
-                    "wifi": "eduoram",
+                    "wifi_network": "eduoram",
                     "outlets": True,
                     "seating": "1-5",
                     "refreshments":"pastries, fruits, soda",
@@ -146,7 +146,7 @@ class AmenitiesRead(AmenitiesBase):
                     "outlets": True,
                     "seating": "1-5",
                     "refreshments":"pastries, fruits, soda",
-                    "environment": ["lively", "indoor"]
+                    "environment": ["lively", "indoor"],
                     "created_at": "2025-01-15T10:20:30Z",
                     "updated_at": "2025-01-16T12:00:00Z",
                 }
