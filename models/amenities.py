@@ -57,17 +57,15 @@ class AmenitiesBase(BaseModel):
 
     model_config = {
         "json_schema_extra": {
-            "examples": [
-                {
-                    "id": "550e8400-e29b-41d4-a716-446655440000",
-                    "wifi_available": True,
-                    "wifi_network": "eduoram",
-                    "outlets": True,
-                    "seating": "1-5",
-                    "refreshments":"pastries, fruits, soda",
-                    "environment": ["lively", "indoor"]
-                }
-            ]
+            "example": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "wifi_available": True,
+                "wifi_network": "eduoram",
+                "outlets": True,
+                "seating": "1-5",
+                "refreshments":"pastries, fruits, soda",
+                "environment": ["lively", "indoor"]
+            }
         }
     }
 
@@ -76,16 +74,14 @@ class AmenitiesCreate(AmenitiesBase):
     """Creation payload; ID is generated server-side but present in the base model."""
     model_config = {
         "json_schema_extra": {
-            "examples": [
-                {
-                    "wifi_available": True,
-                    "wifi_network": "eduoram",
-                    "outlets": True,
-                    "seating": "1-5",
-                    "refreshments":"pastries, fruits, soda",
-                    "environment": ["lively", "indoor"]
-                }
-            ]
+            "example": {
+                "wifi_available": True,
+                "wifi_network": "eduoram",
+                "outlets": True,
+                "seating": "1-5",
+                "refreshments":"pastries, fruits, soda",
+                "environment": ["lively", "indoor"]
+            }
         }
     }
 
@@ -113,13 +109,11 @@ class AmenitiesUpdate(BaseModel):
 
     model_config = {
         "json_schema_extra": {
-            "examples": [
-                {
+            "example": {
                 "wifi_network": "NYPL Guest",
                 "outlets": True,
                 "refreshments": "water",
-                }
-            ]
+            }
         }
     }
 
@@ -138,18 +132,16 @@ class AmenitiesRead(AmenitiesBase):
 
     model_config = {
         "json_schema_extra": {
-            "examples": [
-                {
-                    "id": "550e8400-e29b-41d4-a716-446655440000",
-                    "wifi_available": True,
-                    "wifi_network": "eduoram",
-                    "outlets": True,
-                    "seating": "1-5",
-                    "refreshments":"pastries, fruits, soda",
-                    "environment": ["lively", "indoor"],
-                    "created_at": "2025-01-15T10:20:30Z",
-                    "updated_at": "2025-01-16T12:00:00Z",
-                }
-            ]
+            "example": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "wifi_available": True,
+                "wifi_network": "eduoram",
+                "outlets": True,
+                "seating": "1-5",
+                "refreshments":"pastries, fruits, soda",
+                "environment": ["lively", "indoor"],
+                "created_at": "2025-01-15T10:20:30Z",
+                "updated_at": "2025-01-16T12:00:00Z",
+            }
         }
     }

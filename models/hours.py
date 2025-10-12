@@ -84,10 +84,8 @@ class HoursUpdate(BaseModel):
 
     model_config = {
         "json_schema_extra": {
-            "examples": [
-                {
-                    "mon_start": "10:00",
-                },
-            ]
+            "example":{
+                "mon_start": "10:00",
+            },
         }
     }

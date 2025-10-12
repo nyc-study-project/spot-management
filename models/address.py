@@ -68,18 +68,16 @@ class AddressBase(BaseModel):
 
     model_config = {
         "json_schema_extra": {
-            "examples": [
-                {
-                    "id": "550e8400-e29b-41d4-a716-446655440000",
-                    "street": "116th and Broadway",
-                    "city": "New York",
-                    "state": "NY",
-                    "postal_code": "10027",
-                    "longitude": -73.962459,
-                    "latitude": 40.807415, 
-                    "neighborhood": "Harlem"
-                }
-            ]
+            "example": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "street": "116th and Broadway",
+                "city": "New York",
+                "state": "NY",
+                "postal_code": "10027",
+                "longitude": -73.962459,
+                "latitude": 40.807415, 
+                "neighborhood": "Harlem"
+            }
         }
     }
 
@@ -88,15 +86,13 @@ class AddressCreate(AddressBase):
     """Creation payload; ID is generated server-side but present in the base model."""
     model_config = {
         "json_schema_extra": {
-            "examples": [
-                {
-                    "street": "116th and Broadway",
-                    "city": "New York",
-                    "state": "NY",
-                    "postal_code": "10027",
-                    "neighborhood": "Harlem"
-                }
-            ]
+            "example": {
+                "street": "116th and Broadway",
+                "city": "New York",
+                "state": "NY",
+                "postal_code": "10027",
+                "neighborhood": "Harlem"
+            }
         }
     }
 
@@ -148,19 +144,17 @@ class AddressRead(AddressBase):
 
     model_config = {
         "json_schema_extra": {
-            "examples": [
-                {
-                    "id": "550e8400-e29b-41d4-a716-446655440000",
-                    "street": "116th and Broadway",
-                    "city": "New York",
-                    "state": "NY",
-                    "postal_code": "10027",
-                    "longitude": -73.962459,
-                    "latitude": 40.807415, 
-                    "neighborhood": "Harlem",
-                    "created_at": "2025-01-15T10:20:30Z",
-                    "updated_at": "2025-01-16T12:00:00Z",
-                }
-            ]
+            "example": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "street": "116th and Broadway",
+                "city": "New York",
+                "state": "NY",
+                "postal_code": "10027",
+                "longitude": -73.962459,
+                "latitude": 40.807415, 
+                "neighborhood": "Harlem",
+                "created_at": "2025-01-15T10:20:30Z",
+                "updated_at": "2025-01-16T12:00:00Z",
+            }
         }
     }
