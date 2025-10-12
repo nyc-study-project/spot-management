@@ -9,13 +9,15 @@ This microservice manages study spots in NYC. It provides the spot name, address
 
 **address.py** - Address of each study spot. One address per spot. 
 - stores street, city, state, zip, longitude, latitude, and neighborhood.
+- has studyspot.py PK as FK
 
 **amenities.py** - Amenities provided at each study spot. One amenity per spot. 
 - stores wifi availability, wifi name, outlet availability, amount of seating, type of refreshments, type of environment.
+- has studyspot.py PK as FK
 
 **hours.py** - Hours of spot for every day of the week. One hours model per spot. 
 - stores day, start time, and end time. 
-- not implemented yet.
+- has studyspot.py PK as FK
 
 # Endpoints 
 **Study Spots**
@@ -26,6 +28,9 @@ This microservice manages study spots in NYC. It provides the spot name, address
 - DELETE  /study-spots/{id}    Remove study spot 
 
 # Sprint 1
-All models except hours is made. All Endpoints are created. 
+All models are made. All Endpoints are locally created. 
 <img width="1412" height="546" alt="Screenshot 2025-10-04 at 10 13 02 PM" src="https://github.com/user-attachments/assets/30381cc5-b55a-4bf3-9a29-02b6509f36f8" />
 
+# TODO 
+- connect address.py, amenities.py, and hours.py FK to studyspot.py PK.
+- implement endpoints that connect to DB.
