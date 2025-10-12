@@ -15,7 +15,7 @@ This microservice manages study spots in NYC. It provides the spot name, address
 - stores wifi availability, wifi name, outlet availability, amount of seating, type of refreshments, type of environment.
 - has studyspot.py PK as FK
 
-**hours.py** - Hours of spot for every day of the week. One hours model per spot. 
+**hours.py** - Hours of spot for every day of the week. One hours per spot. 
 - stores day, start time, and end time. 
 - has studyspot.py PK as FK
 
