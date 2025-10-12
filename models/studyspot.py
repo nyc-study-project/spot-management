@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, EmailStr, StringConstraints
 
 from .address import AddressBase
 from .amenities import AmenitiesBase
-
+from .hours import HoursBase
 
 class StudySpotBase(BaseModel):
     id: UUID = Field(
@@ -54,6 +54,30 @@ class StudySpotBase(BaseModel):
         },
     )
 
+    # Embed hours (each with persistent ID)
+    hour: HoursBase = Field(
+        description="Hours linked to this study spot.",
+        json_schema_extra={
+            "example": {
+                "id": "550e8400-e29b-41d4-a716-446655440003",
+                "mon_start": "09:00",
+                "mon_end": "18:00",
+                "tue_start": "09:00",
+                "tue_end": "18:00",
+                "wed_start": "09:00",
+                "wed_end": "18:00",
+                "thu_start": "09:00",
+                "thu_end": "18:00",
+                "fri_start": "09:00",
+                "fri_end": "18:00",
+                "sat_start": "09:00",
+                "sat_end": "16:00",
+                "sun_start": None,
+                "sun_end": None
+            }
+        },
+    )
+
     model_config = {
         "json_schema_extra": {
             "examples": [
@@ -78,6 +102,23 @@ class StudySpotBase(BaseModel):
                         "seating": "1-5",
                         "refreshments":"pastries, fruits, soda",
                         "environment": ["lively", "indoor"]
+                    },
+                    "hour": {
+                        "id": "550e8400-e29b-41d4-a716-446655440003",
+                        "mon_start": "09:00",
+                        "mon_end": "18:00",
+                        "tue_start": "09:00",
+                        "tue_end": "18:00",
+                        "wed_start": "09:00",
+                        "wed_end": "18:00",
+                        "thu_start": "09:00",
+                        "thu_end": "18:00",
+                        "fri_start": "09:00",
+                        "fri_end": "18:00",
+                        "sat_start": "09:00",
+                        "sat_end": "16:00",
+                        "sun_start": None,
+                        "sun_end": None
                     }
                 }
             ]
@@ -108,6 +149,22 @@ class StudySpotCreate(StudySpotBase):
                         "seating": "20+",
                         "refreshments":"pastries, coffee",
                         "environment": ["lively", "indoor", "outdoor"]
+                    },
+                    "hour": {
+                        "mon_start": "09:00",
+                        "mon_end": "18:00",
+                        "tue_start": "09:00",
+                        "tue_end": "18:00",
+                        "wed_start": "09:00",
+                        "wed_end": "18:00",
+                        "thu_start": "09:00",
+                        "thu_end": "18:00",
+                        "fri_start": "09:00",
+                        "fri_end": "18:00",
+                        "sat_start": "09:00",
+                        "sat_end": "16:00",
+                        "sun_start": None,
+                        "sun_end": None
                     }
                 }
             ]
@@ -149,6 +206,29 @@ class StudySpotUpdate(BaseModel):
             }
         },
     )
+    hour: Optional[HoursBase] = Field(
+        None,
+        description="Update the hours linked to this study spot.",
+        json_schema_extra={
+            "example": {
+                "id": "550e8400-e29b-41d4-a716-446655440003",
+                "mon_start": "09:00",
+                "mon_end": "18:00",
+                "tue_start": "09:00",
+                "tue_end": "18:00",
+                "wed_start": "09:00",
+                "wed_end": "18:00",
+                "thu_start": "09:00",
+                "thu_end": "18:00",
+                "fri_start": "09:00",
+                "fri_end": "18:00",
+                "sat_start": "09:00",
+                "sat_end": "16:00",
+                "sun_start": None,
+                "sun_end": None
+            }
+        }
+    )
 
 
 class StudySpotRead(StudySpotBase):
@@ -187,6 +267,23 @@ class StudySpotRead(StudySpotBase):
                         "seating": "20+",
                         "refreshments":"pastries, coffee",
                         "environment": ["lively", "indoor", "outdoor"]
+                    },
+                    "hour": {
+                        "id": "550e8400-e29b-41d4-a716-446655440003",
+                        "mon_start": "09:00",
+                        "mon_end": "18:00",
+                        "tue_start": "09:00",
+                        "tue_end": "18:00",
+                        "wed_start": "09:00",
+                        "wed_end": "18:00",
+                        "thu_start": "09:00",
+                        "thu_end": "18:00",
+                        "fri_start": "09:00",
+                        "fri_end": "18:00",
+                        "sat_start": "09:00",
+                        "sat_end": "16:00",
+                        "sun_start": None,
+                        "sun_end": None
                     },
                     "created_at": "2025-01-15T10:20:30Z",
                     "updated_at": "2025-01-16T12:00:00Z",
