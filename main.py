@@ -8,23 +8,23 @@ from typing import Dict, List, Optional
 from uuid import UUID
 
 from fastapi import FastAPI, HTTPException, Query, Path
-from pydantic import PositiveInt 
-from sqlalchemy import create_engine, Column, String, Integer, Boolean, Table, MetaData, select, insert, update, delete
-from sqlalchemy.orm import sessionmaker
+from pydantic import PositiveInt
+# from sqlalchemy import create_engine, Column, String, Integer, Boolean, Table, MetaData, select, insert, update, delete
+# from sqlalchemy.orm import sessionmaker
 
 from models.studyspot import StudySpotCreate, StudySpotRead, StudySpotUpdate
 from models.address import AddressRead
 from models.amenities import AmenitiesRead
 from models.health import Health
 
-port = int(os.environ.get("FASTAPIPORT", 8000))
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL environment variable not set!")
+port = int(os.environ.get("PORT", 8080))
+# DATABASE_URL = os.getenv("DATABASE_URL")
+# if not DATABASE_URL:
+#     raise RuntimeError("DATABASE_URL environment variable not set!")
 
-# SQLAlchemy setup for MySQL
-engine = create_engine(DATABASE_URL, future=True)
-metadata = MetaData()
+# # SQLAlchemy setup for MySQL
+# engine = create_engine(DATABASE_URL, future=True)
+# metadata = MetaData()
 
 
 
@@ -136,4 +136,4 @@ def root():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
