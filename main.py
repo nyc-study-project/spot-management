@@ -4,13 +4,13 @@ import os
 import socket
 from datetime import datetime
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 from uuid import UUID
-from pydantic import PositiveInt 
 
-from fastapi import FastAPI, HTTPException
-from fastapi import Query, Path
-from typing import Optional
+from fastapi import FastAPI, HTTPException, Query, Path
+from pydantic import PositiveInt 
+from sqlalchemy import create_engine, Column, String, Integer, Boolean, Table, MetaData, select, insert, update, delete
+from sqlalchemy.orm import sessionmaker
 
 from models.studyspot import StudySpotCreate, StudySpotRead, StudySpotUpdate
 from models.address import AddressRead
@@ -18,6 +18,15 @@ from models.amenities import AmenitiesRead
 from models.health import Health
 
 port = int(os.environ.get("FASTAPIPORT", 8000))
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL environment variable not set!")
+
+# SQLAlchemy setup for MySQL
+engine = create_engine(DATABASE_URL, future=True)
+metadata = MetaData()
+
+
 
 # Spot management: study spot listings with location, amenities (WiFi, outlets, seating), and hours.
 # -----------------------------------------------------------------------------
