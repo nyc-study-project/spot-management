@@ -13,8 +13,8 @@ from fastapi import Query, Path
 from typing import Optional
 
 from models.studyspot import StudySpotCreate, StudySpotRead, StudySpotUpdate
-from models.address import AddressCreate, AddressRead, AddressUpdate
-from models.amenities import AmenitiesCreate, AmenitiesRead, AmenitiesUpdate
+from models.address import AddressRead
+from models.amenities import AmenitiesRead
 from models.health import Health
 
 port = int(os.environ.get("FASTAPIPORT", 8000))
