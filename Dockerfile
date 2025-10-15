@@ -1,6 +1,6 @@
 # The base image for python. There are countless official images.
 # Alpine just sounded cool.
-FROM python:3.11-alpine
+FROM python:3.11-slim
 
 # The directory in the container where the app will run.
 WORKDIR /app
