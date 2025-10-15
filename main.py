@@ -9,32 +9,32 @@ from uuid import UUID
 
 from fastapi import FastAPI, HTTPException, Query, Path
 from pydantic import PositiveInt
-# from sqlalchemy import create_engine, Column, String, Integer, Boolean, Table, MetaData, select, insert, update, delete
-# from sqlalchemy.orm import sessionmaker
+import mysql.connector
 
 from models.studyspot import StudySpotCreate, StudySpotRead, StudySpotUpdate
 from models.address import AddressRead
 from models.amenities import AmenitiesRead
 from models.health import Health
 
+# -----------------------------------------------------------------------------
+# Cloud Run Connection
+# -----------------------------------------------------------------------------
+def get_connection():
+    try:
+        connection = mysql.connector.connect(
+            user=os.environ["DB_USER"],
+            password=os.environ["DB_PASS"],
+            database=os.environ["DB_NAME"],
+            unix_socket=f"/cloudsql/{os.environ['INSTANCE_CONNECTION_NAME']}"
+        )
+        return connection
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database connection failed: {e}")
+
+# -----------------------------------------------------------------------------
+# FastAPI Setup
+# -----------------------------------------------------------------------------
 port = int(os.environ.get("PORT", 8080))
-# DATABASE_URL = os.getenv("DATABASE_URL")
-# if not DATABASE_URL:
-#     raise RuntimeError("DATABASE_URL environment variable not set!")
-
-# # SQLAlchemy setup for MySQL
-# engine = create_engine(DATABASE_URL, future=True)
-# metadata = MetaData()
-
-
-
-# Spot management: study spot listings with location, amenities (WiFi, outlets, seating), and hours.
-# -----------------------------------------------------------------------------
-# Fake in-memory "databases"
-# -----------------------------------------------------------------------------
-studyspots: Dict[UUID, StudySpotRead] = {}
-addresses: Dict[UUID, AddressRead] = {}
-amenities: Dict[UUID, AmenitiesRead] = {}
 
 app = FastAPI(
     title="StudySpot API",
@@ -42,7 +42,9 @@ app = FastAPI(
     version="0.1.0",
 )
 
-
+# -----------------------------------------------------------------------------
+# Health Check Endpoints
+# -----------------------------------------------------------------------------
 def make_health(echo: Optional[str], path_echo: Optional[str]=None) -> Health:
     return Health(
         status=200,
@@ -71,10 +73,11 @@ def get_health_with_path(
 
 @app.post("/study-spots", response_model=StudySpotRead, status_code=201)
 def create_studyspot(studyspot: StudySpotCreate):
-    if studyspot.id in studyspots:
-        raise HTTPException(status_code=400, detail="Studyspot with this ID already exists")
-    studyspots[studyspot.id] = StudySpotRead(**studyspot.model_dump())
-    return studyspots[studyspot.id]
+    raise HTTPException(status_code=501, detail="Not implemented: Create new user and hash password")
+    # if studyspot.id in studyspots:
+    #     raise HTTPException(status_code=400, detail="Studyspot with this ID already exists")
+    # studyspots[studyspot.id] = StudySpotRead(**studyspot.model_dump())
+    # return studyspots[studyspot.id]
 
 @app.get("/study-spots", response_model=List[StudySpotRead])
 def list_studyspots(
@@ -85,43 +88,46 @@ def list_studyspots(
     refreshments: Optional[str] = Query(None, description="Filter by refreshments"),
     city: Optional[str] = Query(None, description="Filter by city"),
 ):
-    results = list(studyspots.values())
-    if name is not None:
-        results = [a for a in results if a.name == name]
-    if wifi is not None:
-        results = [a for a in results if a.amenity.wifi == wifi]
-    if outlets is not None:
-        results = [a for a in results if a.amenity.outlets == outlets]
-    if seating is not None:
-        results = [a for a in results if a.amenity.seating == seating]
-    if refreshments is not None:
-        results = [a for a in results if a.amenity.refreshments and refreshments.lower() in a.amenity.refreshments.lower()]
-    if city is not None:
-        results = [a for a in results if a.address.city == city]
-    return results
+    raise HTTPException(status_code=501, detail="Not implemented: Create new user and hash password")
+#     results = list(studyspots.values())
+#     if name is not None:
+#         results = [a for a in results if a.name == name]
+#     if wifi is not None:
+#         results = [a for a in results if a.amenity.wifi == wifi]
+#     if outlets is not None:
+#         results = [a for a in results if a.amenity.outlets == outlets]
+#     if seating is not None:
+#         results = [a for a in results if a.amenity.seating == seating]
+#     if refreshments is not None:
+#         results = [a for a in results if a.amenity.refreshments and refreshments.lower() in a.amenity.refreshments.lower()]
+#     if city is not None:
+#         results = [a for a in results if a.address.city == city]
+#     return results
 
 @app.get("/study-spots/{studyspot_id}", response_model=StudySpotRead)
 def get_studyspot(studyspot_id: UUID):
-    if studyspot_id not in studyspots:
-        raise HTTPException(status_code=404, detail="Study Spot not found")
-    return studyspots[studyspot_id]
+    raise HTTPException(status_code=501, detail="Not implemented: Create new user and hash password")
+    # if studyspot_id not in studyspots:
+    #     raise HTTPException(status_code=404, detail="Study Spot not found")
+    # return studyspots[studyspot_id]
 
 @app.patch("/study-spots/{studyspot_id}", response_model=StudySpotRead)
 def update_studyspot(studyspot_id: UUID, update: StudySpotUpdate):
-    if studyspot_id not in studyspots:
-        raise HTTPException(status_code=404, detail="Study Spot not found")
-    stored = studyspots[studyspot_id].model_dump()
-    stored.update(update.model_dump(exclude_unset=True))
-    studyspots[studyspot_id] = StudySpotRead(**stored)
-    return studyspots[studyspot_id]
+    raise HTTPException(status_code=501, detail="Not implemented: Create new user and hash password")
+    # if studyspot_id not in studyspots:
+    #     raise HTTPException(status_code=404, detail="Study Spot not found")
+    # stored = studyspots[studyspot_id].model_dump()
+    # stored.update(update.model_dump(exclude_unset=True))
+    # studyspots[studyspot_id] = StudySpotRead(**stored)
+    # return studyspots[studyspot_id]
 
 @app.delete("/study-spots/{studyspot_id}", response_model=StudySpotRead)
 def delete_studyspot(studyspot_id: UUID):
-    if studyspot_id not in studyspots:
-        raise HTTPException(status_code=404, detail="Study Spot not found")
-    deleted = studyspots.pop(studyspot_id)
-    return deleted
-
+    raise HTTPException(status_code=501, detail="Not implemented: Create new user and hash password")
+    # if studyspot_id not in studyspots:
+    #     raise HTTPException(status_code=404, detail="Study Spot not found")
+    # deleted = studyspots.pop(studyspot_id)
+    # return deleted
 
 # -----------------------------------------------------------------------------
 # Root
@@ -135,5 +141,4 @@ def root():
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run("main:app", host="0.0.0.0", port=port)
