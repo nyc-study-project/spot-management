@@ -31,6 +31,14 @@ This microservice manages study spots in NYC. It provides the spot name, address
 All models are made. All Endpoints are locally created. 
 <img width="1412" height="546" alt="Screenshot 2025-10-04 at 10 13 02 PM" src="https://github.com/user-attachments/assets/30381cc5-b55a-4bf3-9a29-02b6509f36f8" />
 
-# TODO 
+# Sprint 2 - IN PROGRESS
+Connected main.py to Cloud Run. Cloud Run is connected to Cloud SQL instance with spot-management database. 
+
+Things to todo: 
+- create table in GCP database 
+- import test data into database
+- implement FastAPI endpoints that connect to database
+
+# TODO
 - connect address.py, amenities.py, and hours.py FK to studyspot.py PK.
 - implement endpoints that connect to DB.
