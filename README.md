@@ -21,11 +21,11 @@ This microservice manages study spots in NYC. It provides the spot name, address
 
 # Endpoints 
 **Study Spots**
-- POST /study-spots    Create a new study spot
-- GET /study-spots    Retrieve all study spots
-- GET /study-spots/{id}    Retrieve study spot with specific id
-- PATCH /study-spots/{id}    Update part of a specific study spot
-- DELETE  /study-spots/{id}    Remove study spot 
+- POST /studyspots    Create a new study spot
+- GET /studyspots    Retrieve all study spots
+- GET /studyspots/{id}    Retrieve study spot with specific id
+- PATCH /studyspots/{id}    Update part of a specific study spot
+- DELETE  /studyspots/{id}    Remove study spot 
 
 # Sprint 1
 All models are made. All Endpoints are locally created. 

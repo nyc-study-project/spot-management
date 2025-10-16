@@ -17,6 +17,13 @@ from models.address import AddressRead
 from models.amenities import AmenitiesRead
 from models.health import Health
 
+
+from fastapi import Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+import traceback
+
+
 # -----------------------------------------------------------------------------
 # Database Connection
 # -----------------------------------------------------------------------------
@@ -68,8 +75,42 @@ def execute_query(queries: list, only_one=False):
 # -----------------------------------------------------------------------------
 # FastAPI Setup
 # -----------------------------------------------------------------------------
-port = int(os.environ.get("PORT", 8080))
+port = int(os.environ.get("PORT", 8000))
 app = FastAPI(title="StudySpot API", description="Study Spot API", version="0.1.0")
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """
+    Logs the body that caused a 422 validation error, without altering response format.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = "<unreadable body>"
+
+    print("\n🚨 422 Validation Error at:", request.url)
+    print("Raw body received:\n", json.dumps(body, indent=2))
+    print("Validation errors:\n", exc.errors())
+    print("Traceback:\n", traceback.format_exc())
+
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": exc.errors(),
+            "body": body,  # include raw body in response to debug shape
+        },
+    )
+
+
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # -----------------------------------------------------------------------------
 # Health Check
@@ -98,7 +139,7 @@ def get_health_with_path(path_echo: str, echo: str | None = Query(None)):
 # -----------------------------------------------------------------------------
 # StudySpots
 # -----------------------------------------------------------------------------
-@app.post("/study-spots", response_model=StudySpotRead, status_code=201)
+@app.post("/studyspots", response_model=StudySpotRead, status_code=201)
 def create_studyspot(studyspot: StudySpotCreate):
     try:
         spot_id = str(uuid4())
@@ -192,7 +233,7 @@ def create_studyspot(studyspot: StudySpotCreate):
 # -----------------------------------------------------------------------------
 # Other routes unchanged
 # -----------------------------------------------------------------------------
-@app.get("/study-spots", response_model=List[StudySpotRead])
+@app.get("/studyspots", response_model=List[StudySpotRead])
 def list_studyspots(
     name: Optional[str] = Query(None),
     wifi: Optional[bool] = Query(None),
@@ -254,7 +295,7 @@ def list_studyspots(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/study-spots/{studyspot_id}", response_model=StudySpotRead)
+@app.get("/studyspots/{studyspot_id}", response_model=StudySpotRead)
 def get_studyspot(studyspot_id: UUID):
     try:
         queries = [("SELECT * FROM studyspots WHERE id = %s;", (str(studyspot_id),))]
@@ -294,7 +335,7 @@ def get_studyspot(studyspot_id: UUID):
 
 
 
-@app.patch("/study-spots/{studyspot_id}", response_model=StudySpotRead)
+@app.patch("/studyspots/{studyspot_id}", response_model=StudySpotRead)
 def update_studyspot(studyspot_id: UUID, update: StudySpotUpdate):
     try:
         fields = []
@@ -390,7 +431,7 @@ def update_studyspot(studyspot_id: UUID, update: StudySpotUpdate):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.delete("/study-spots/{studyspot_id}", status_code=204)
+@app.delete("/studyspots/{studyspot_id}", status_code=204)
 def delete_studyspot(studyspot_id: UUID):
     try:
         queries = [("DELETE FROM studyspots WHERE id = %s;", (str(studyspot_id),))]

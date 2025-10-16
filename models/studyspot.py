@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 from datetime import date, datetime
 from pydantic import BaseModel, Field, EmailStr, StringConstraints
 
-from .address import AddressBase
+from .address import AddressBase, AddressUpdate
 from .amenities import AmenitiesBase, AmenitiesUpdate
 from .hours import HoursBase
 
@@ -175,7 +175,7 @@ class StudySpotCreate(StudySpotBase):
 class StudySpotUpdate(BaseModel):
     """Partial update for a StudySpot; supply only fields to change."""
     name: Optional[str] = Field(None, json_schema_extra={"example": "Hungarian Pastry Shop"})
-    address: Optional[AddressBase] = Field(
+    address: Optional[AddressUpdate] = Field(
         None,
         description="Update the address linked to this study spot.",
         json_schema_extra={
