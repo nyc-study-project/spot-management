@@ -1,20 +1,35 @@
-# The base image for python. There are countless official images.
-# Alpine just sounded cool.
-FROM python:3.11-slim
+# ------------------------------
+#   StudySpot API Dockerfile
+# ------------------------------
 
-# The directory in the container where the app will run.
-WORKDIR /app
+# --- Base image ---
+    FROM python:3.11-slim
 
-# Copy the requirements.txt file from the project directory into the working
-# directory and install the requirements.
-COPY ./requirements.txt /app
-RUN pip install -r requirements.txt
-
-# Copy over the files.
-COPY . .
-
-# Expose/publish port 8080 for the container.
-EXPOSE 8080
-
-# Run the app.
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+    # --- Set working directory ---
+    WORKDIR /app
+    
+    # --- Install system dependencies (optional, helps with mysqlclient etc.) ---
+    RUN apt-get update && apt-get install -y \
+        build-essential \
+        default-libmysqlclient-dev \
+        && rm -rf /var/lib/apt/lists/*
+    
+    # --- Install Python dependencies ---
+    COPY requirements.txt .
+    RUN pip install --no-cache-dir -r requirements.txt
+    
+    # --- Copy the entire application ---
+    COPY . .
+    
+    # --- Expose FastAPI port ---
+    EXPOSE 8080
+    
+    # --- Conditional run command ---
+    CMD if [ "$ENV" = "local" ]; then \
+            echo "Running in LOCAL mode with autoreload"; \
+            uvicorn main:app --host 0.0.0.0 --port 8080 --reload; \
+        else \
+            echo "Running in PRODUCTION mode"; \
+            uvicorn main:app --host 0.0.0.0 --port 8080; \
+        fi
+    

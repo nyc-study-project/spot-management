@@ -6,7 +6,7 @@ from datetime import date, datetime
 from pydantic import BaseModel, Field, EmailStr, StringConstraints
 
 from .address import AddressBase
-from .amenities import AmenitiesBase
+from .amenities import AmenitiesBase, AmenitiesUpdate
 from .hours import HoursBase
 
 class StudySpotBase(BaseModel):
@@ -191,7 +191,7 @@ class StudySpotUpdate(BaseModel):
             }
         },
     )
-    amenity: Optional[AmenitiesBase] = Field(
+    amenity: Optional[AmenitiesUpdate] = Field(
         None,
         description="Update the amenities linked to this study spot.",
         json_schema_extra={
