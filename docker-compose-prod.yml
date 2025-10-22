@@ -1,0 +1,12 @@
+services:
+  studyspot-api:
+    image: studyspot-api:latest
+    container_name: studyspot-prod
+    ports:
+      - "8080:8080"
+    environment:
+      - ENV=prod
+      - DB_USER=avi
+      - DB_PASS=columbia25
+      - DB_NAME=nycstudyspots
+    restart: unless-stopped
