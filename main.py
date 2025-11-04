@@ -26,6 +26,7 @@ import traceback
 # -----------------------------------------------------------------------------
 # Cloud Run Connection
 # -----------------------------------------------------------------------------
+'''
 def get_connection():
     try:
         connection = mysql.connector.connect(
@@ -37,28 +38,56 @@ def get_connection():
         return connection
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database connection failed: {e}")
+'''
+import os
+import mysql.connector
+from fastapi import HTTPException
+
+def get_connection():
+    try:
+        env = os.environ.get("ENV", "local")
+
+        if env == "local":
+            # Local dev — connects through SSH tunnel (localhost:3307)
+            connection = mysql.connector.connect(
+                host="127.0.0.1",
+                port=3307,
+                user="avi",
+                password="columbia25",
+                database="mydb",
+            )
+        else:
+            # Production — connects via Cloud SQL Unix socket
+            connection = mysql.connector.connect(
+                user=os.environ["DB_USER"],
+                password=os.environ["DB_PASS"],
+                database=os.environ["DB_NAME"],
+                unix_socket=f"/cloudsql/{os.environ['INSTANCE_CONNECTION_NAME']}"
+            )
+
+        return connection
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database connection failed: {e}")
 
 
 # # -----------------------------------------------------------------------------
 # # Database Connection
 # # -----------------------------------------------------------------------------
-# def get_connection():
-#     if os.environ.get("ENV") == "local":
-#         return mysql.connector.connect(
-#             host="127.0.0.1",
-#             user="root",
-#             password="",
-#             database="mydb",
-#             port=3306
-#         )
-#     else:
-#         return mysql.connector.connect(
-#             host="34.138.240.11",
-#             user="avi",
-#             password="columbia25",
-#             database="nycstudyspots",
-#             port=3306
-#         )
+'''
+import mysql.connector
+
+def get_connection():
+    return mysql.connector.connect(
+        host="127.0.0.1",
+        port=3307,
+        user="avi",
+        password="columbia25",
+        database="mydb",
+    )
+'''
+
+
 
 
 def execute_query(queries: list, only_one=False):
