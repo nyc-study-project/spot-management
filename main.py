@@ -4,7 +4,7 @@ import os
 import socket
 import json
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from uuid import UUID, uuid4
 
 from sqlalchemy import create_engine, text
@@ -20,7 +20,7 @@ from models.amenities import AmenitiesRead
 from models.health import Health
 
 
-from fastapi import Request
+from fastapi import Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 import traceback
@@ -40,11 +40,8 @@ def get_connection():
             port = 5432
             database = "spot_db"
 
-            connection_str = (
-                f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}"
-            )
+            connection_str = (f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}")
         else:
-            # Production — connects via Cloud SQL Unix socket
             user=os.environ["DB_USER"]
             password=os.environ["DB_PASS"]
             database=os.environ["DB_NAME"]
@@ -65,20 +62,21 @@ def get_connection():
 # # -----------------------------------------------------------------------------
 # # Database Connection
 # # -----------------------------------------------------------------------------
-def execute_query(Session, query: str, params: dict | tuple | None=None, fetchone=False):
+def execute_query(Session, queries: List[Tuple[str, tuple]], fetchone=False):
     try: 
-        with Session() as session:
-            result = session.execute(text(query), params or {})
+        with Session() as session, session.begin():
+            results = []
+            for query, params in queries:
+                result = session.execute(query, params or {})
 
-            if query.strip().upper().startswith("SELECT"):
-                rows = result.mappings().fetchone() if fetchone else result.mappings().all()
-                return rows
-            else: 
-                session.commit()
-                return result.rowcount
+                if query.strip().upper().startswith("SELECT"):
+                    rows = result.mappings().fetchone() if fetchone else result.mappings().all()
+                    results.append(rows)
+                else: 
+                    results.append(result.rowcount)  
+            return results if len(results) > 1 else results[0]
 
     except Exception as e:
-        session.rollback()
         raise HTTPException(status_code=500, detail=f"DB Error: {e}")
 
     
@@ -150,92 +148,140 @@ def get_health_with_path(path_echo: str, echo: str | None = Query(None)):
 # StudySpots
 # -----------------------------------------------------------------------------
 @app.post("/studyspots", response_model=StudySpotRead, status_code=201)
-def create_studyspot(studyspot: StudySpotCreate):
+def create_studyspot(studyspot: StudySpotCreate, response: Response):
+    Session = get_connection()
+    spot_id = str(uuid4())
+
     try:
-        spot_id = str(uuid4())
-        # 1️⃣ Insert study spot
         queries = [
             (
+                "INSERT INTO studyspots(id, name, created_at) VALUES (%s, %s, NOW())", 
+                (spot_id, studyspot.name)
+            ),
+            (
                 """
-                INSERT INTO studyspots (
-                    id, name, street, city, state, postal_code, latitude, longitude, neighborhood,
-                    wifi_available, wifi_network, outlets, seating, refreshments, environment, created_at
-                )
-                VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                    %s, %s, %s, %s, %s, %s, UTC_TIMESTAMP()
-                );
-                """,
+                INSERT INTO address(id, studyspot_id, street, city, state, postal_code, latitude, longitude, neighborhood)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, 
                 (
-                    spot_id,
-                    studyspot.name,
-                    getattr(studyspot.address, "street", None),
-                    getattr(studyspot.address, "city", None),
-                    getattr(studyspot.address, "state", None),
-                    getattr(studyspot.address, "postal_code", None),
+                    str(uuid4()), 
+                    spot_id, 
+                    studyspot.address.street, 
+                    studyspot.address.city, 
+                    studyspot.address.state, 
+                    studyspot.address.postal_code, 
                     getattr(studyspot.address, "latitude", None),
                     getattr(studyspot.address, "longitude", None),
-                    getattr(studyspot.address, "neighborhood", None),
+                    studyspot.address.neighborhood
+                )
+            ),
+            (
+                """
+                INSERT INTO amenities(id, studyspot_id, wifi_available, wifi_network, outlets, seating, refreshments, environment) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, 
+                (
+                    str(uuid4()), 
+                    spot_id, 
                     studyspot.amenity.wifi_available,
                     getattr(studyspot.amenity, "wifi_network", None),
                     studyspot.amenity.outlets,
                     studyspot.amenity.seating.value if hasattr(studyspot.amenity.seating, "value") else studyspot.amenity.seating,
-                    studyspot.amenity.refreshments,
+                    getattr(studyspot.amenity, "refreshments", None),
                     # ✅ FIX: tolerate string or Enum values
                     json.dumps([
                         env.value if hasattr(env, "value") else env
                         for env in (studyspot.amenity.environment or [])
-                    ]),
-                ),
-            )
+                    ])
+                )
+            ),
+            (
+                """
+                INSERT INTO hours(id, studyspot_id, mon_start, mon_end, tue_start, tue_end,
+                    wed_start, wed_end, thu_start, thu_end, fri_start, fri_end,
+                    sat_start, sat_end, sun_start, sun_end
+                ) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, 
+                (
+                    str(uuid4()), 
+                    spot_id,
+                    getattr(studyspot.hour, "mon_start", None),
+                    getattr(studyspot.hour, "mon_end", None),
+                    getattr(studyspot.hour, "tue_start", None),
+                    getattr(studyspot.hour, "tue_end", None),
+                    getattr(studyspot.hour, "wed_start", None),
+                    getattr(studyspot.hour, "wed_end", None),
+                    getattr(studyspot.hour, "thu_start", None),
+                    getattr(studyspot.hour, "thu_end", None),
+                    getattr(studyspot.hour, "fri_start", None),
+                    getattr(studyspot.hour, "fri_end", None),
+                    getattr(studyspot.hour, "sat_start", None),
+                    getattr(studyspot.hour, "sat_end", None),
+                    getattr(studyspot.hour, "sun_start", None),
+                    getattr(studyspot.hour, "sun_end", None),
+                )
+            ),
         ]
 
-        for day in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]:
-            start = getattr(studyspot.hour, f"{day}_start", None)
-            end = getattr(studyspot.hour, f"{day}_end", None)
-            if start or end:
-                queries.append((
-                    """
-                    INSERT INTO hours (id, studyspot_id, day_of_week, start_time, end_time)
-                    VALUES (%s, %s, %s, %s, %s);
-                    """,
-                    (str(uuid4()), spot_id, day, start, end)
-                ))
+        execute_query(Session, queries)
 
-        # 3️⃣ Retrieve the newly created record
-        queries.append(("SELECT * FROM studyspots WHERE id = %s;", (spot_id,)))
+        select_query = """
+            SELECT *
+            FROM studyspots s
+            JOIN address a ON s.id = a.studyspot_id
+            JOIN amenities am ON s.id = am.studyspot_id
+            JOIN hours h ON s.id = h.studyspot_id
+            WHERE s.id = %s
+        """
 
-        new_spot = execute_query(queries, only_one=True)
-        if not new_spot:
-            raise HTTPException(status_code=500, detail="Failed to create new study spot.")
+        with Session() as session:
+            result = session.execute(select_query, (spot_id,))
+            row = result.mappings().fetchone()
 
-        response = StudySpotRead(
-            id=new_spot["id"],
-            name=new_spot["name"],
-            address=AddressRead(
-                street=new_spot["street"],
-                city=new_spot["city"],
-                state=new_spot.get("state", "NY"),
-                postal_code=new_spot.get("postal_code", "00000"),
-                latitude=new_spot.get("latitude"),
-                longitude=new_spot.get("longitude"),
-                neighborhood=new_spot.get("neighborhood"),
-            ),
-            amenity=AmenitiesRead(
-                wifi_available=bool(new_spot["wifi_available"]),
-                wifi_network=new_spot.get("wifi_network"),
-                outlets=bool(new_spot["outlets"]),
-                seating=new_spot["seating"],
-                refreshments=new_spot["refreshments"],
-                environment=json.loads(new_spot.get("environment") or "[]"),
-            ),
-            hour=HoursBase(),
-            created_at=new_spot["created_at"],
-            updated_at=new_spot.get("updated_at") or datetime.utcnow(),
+        result = StudySpotRead(
+            "id": row["id"],
+            "name": row["name"],
+            "created_at": row["created_at"],
+            "address": {
+                "street": row["street"],
+                "city": row["city"],
+                "state": row["state"],
+                "postal_code": row["postal_code"],
+                "latitude": row["latitude"],
+                "longitude": row["longitude"],
+                "neighborhood": row["neighborhood"],
+            },
+            "amenity": {
+                "wifi_available": row["wifi_available"],
+                "wifi_network": row["wifi_network"],
+                "outlets": row["outlets"],
+                "seating": row["seating"],
+                "refreshments": row["refreshments"],
+                "environment": json.loads(row["environment"]) if row["environment"] else [],
+            },
+            "hour": {
+                "mon_start": row["mon_start"],
+                "mon_end": row["mon_end"],
+                "tue_start": row["tue_start"],
+                "tue_end": row["tue_end"],
+                "wed_start": row["wed_start"],
+                "wed_end": row["wed_end"],
+                "thu_start": row["thu_start"],
+                "thu_end": row["thu_end"],
+                "fri_start": row["fri_start"],
+                "fri_end": row["fri_end"],
+                "sat_start": row["sat_start"],
+                "sat_end": row["sat_end"],
+                "sun_start": row["sun_start"],
+                "sun_end": row["sun_end"],
+            }
         )
 
-        return response
+        response.headers["Location"] = f"/studyspots/{spot_id}"
 
+        return result
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -243,7 +289,7 @@ def create_studyspot(studyspot: StudySpotCreate):
 # -----------------------------------------------------------------------------
 # Other routes unchanged
 # -----------------------------------------------------------------------------
-@app.get("/studyspots", response_model=List[StudySpotRead])
+@app.get("/studyspots", response_model=List[StudySpotRead], status_code=200)
 def list_studyspots(
     name: Optional[str] = Query(None),
     wifi: Optional[bool] = Query(None),
@@ -305,7 +351,7 @@ def list_studyspots(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/studyspots/{studyspot_id}", response_model=StudySpotRead)
+@app.get("/studyspots/{studyspot_id}", response_model=StudySpotRead, status_code=200)
 def get_studyspot(studyspot_id: UUID):
     try:
         queries = [("SELECT * FROM studyspots WHERE id = %s;", (str(studyspot_id),))]
@@ -345,7 +391,7 @@ def get_studyspot(studyspot_id: UUID):
 
 
 
-@app.patch("/studyspots/{studyspot_id}", response_model=StudySpotRead)
+@app.patch("/studyspots/{studyspot_id}", response_model=StudySpotRead, status_code=200)
 def update_studyspot(studyspot_id: UUID, update: StudySpotUpdate):
     try:
         fields = []
