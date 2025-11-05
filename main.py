@@ -7,9 +7,11 @@ from datetime import datetime
 from typing import Dict, List, Optional
 from uuid import UUID, uuid4
 
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
+
 from fastapi import FastAPI, HTTPException, Query, Path
 from pydantic import PositiveInt
-import mysql.connector
 
 from models.hours import HoursBase
 from models.studyspot import StudySpotCreate, StudySpotRead, StudySpotUpdate
@@ -26,46 +28,35 @@ import traceback
 # -----------------------------------------------------------------------------
 # Cloud Run Connection
 # -----------------------------------------------------------------------------
-'''
-def get_connection():
-    try:
-        connection = mysql.connector.connect(
-            user=os.environ["DB_USER"],
-            password=os.environ["DB_PASS"],
-            database=os.environ["DB_NAME"],
-            unix_socket=f"/cloudsql/{os.environ['INSTANCE_CONNECTION_NAME']}"
-        )
-        return connection
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database connection failed: {e}")
-'''
-import os
-import mysql.connector
-from fastapi import HTTPException
 
 def get_connection():
     try:
         env = os.environ.get("ENV", "local")
 
         if env == "local":
-            # Local dev — connects through SSH tunnel (localhost:3307)
-            connection = mysql.connector.connect(
-                host="127.0.0.1",
-                port=3307,
-                user="avi",
-                password="columbia25",
-                database="mydb",
+            user = "erikoy"
+            password = "columbia25"
+            host = "127.0.0.1"
+            port = 5432
+            database = "spot_db"
+
+            connection_str = (
+                f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}"
             )
         else:
             # Production — connects via Cloud SQL Unix socket
-            connection = mysql.connector.connect(
-                user=os.environ["DB_USER"],
-                password=os.environ["DB_PASS"],
-                database=os.environ["DB_NAME"],
-                unix_socket=f"/cloudsql/{os.environ['INSTANCE_CONNECTION_NAME']}"
-            )
+            user=os.environ["DB_USER"]
+            password=os.environ["DB_PASS"]
+            database=os.environ["DB_NAME"]
+            unix_socket=f"/cloudsql/{os.environ['INSTANCE_CONNECTION_NAME']}"
 
-        return connection
+            connection_str = (
+                f"postgresql+psycopg2://{user}:{password}@/{database}"
+                f"?host={unix_socket}"
+            )
+        engine = create_engine(connection_str, pool_pre_ping=True)
+        Session = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+        return Session
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database connection failed: {e}")
@@ -74,48 +65,23 @@ def get_connection():
 # # -----------------------------------------------------------------------------
 # # Database Connection
 # # -----------------------------------------------------------------------------
-'''
-import mysql.connector
+def execute_query(Session, query: str, params: dict | tuple | None=None, fetchone=False):
+    try: 
+        with Session() as session:
+            result = session.execute(text(query), params or {})
 
-def get_connection():
-    return mysql.connector.connect(
-        host="127.0.0.1",
-        port=3307,
-        user="avi",
-        password="columbia25",
-        database="mydb",
-    )
-'''
+            if query.strip().upper().startswith("SELECT"):
+                rows = result.mappings().fetchone() if fetchone else result.mappings().all()
+                return rows
+            else: 
+                session.commit()
+                return result.rowcount
 
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"DB Error: {e}")
 
-
-
-def execute_query(queries: list, only_one=False):
-    conn, cursor = None, None
-    result = None
-    try:
-        conn = get_connection()
-        cursor = conn.cursor(dictionary=True)
-        for i, (query, params) in enumerate(queries):
-            cursor.execute(query, params)
-            if i == len(queries) - 1:
-                if query.strip().upper().startswith("SELECT"):
-                    result = cursor.fetchone() if only_one else cursor.fetchall()
-                else:
-                    result = cursor.rowcount
-        conn.commit()
-    except mysql.connector.Error as err:
-        if conn:
-            conn.rollback()
-        raise Exception(f"DB Error: {err}")
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
-    return result
-
-
+    
 # -----------------------------------------------------------------------------
 # FastAPI Setup
 # -----------------------------------------------------------------------------
