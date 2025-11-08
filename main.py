@@ -16,8 +16,8 @@ from pydantic import PositiveInt
 
 from models.hours import HoursBase
 from models.studyspot import StudySpotCreate, StudySpotRead, StudySpotUpdate
-from models.address import AddressRead
-from models.amenities import AmenitiesRead
+from models.address import AddressRead, Neighborhood
+from models.amenities import AmenitiesRead, Seating, Environment
 from models.health import Health
 
 
@@ -58,6 +58,7 @@ def get_connection():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database connection failed: {e}")
+
 Session = get_connection()
 
 # -----------------------------------------------------------------------------
@@ -73,7 +74,9 @@ def execute_query(queries: List[Tuple[str, tuple]], fetchone=False):
                 if query.strip().upper().startswith("SELECT"):
                     rows = result.mappings().fetchone() if fetchone else result.mappings().all()
                     results.append(rows)
-            return results
+                else:
+                    results.append(result.rowcount())
+            return results[0] if len(results)==1 else results
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DB Error: {e}")
@@ -142,6 +145,12 @@ def get_health_no_path(echo: str | None = Query(None)):
 def get_health_with_path(path_echo: str, echo: str | None = Query(None)):
     return make_health(echo=echo, path_echo=path_echo)
 
+# -----------------------------------------------------------------------------
+# Utility
+# -----------------------------------------------------------------------------
+def generate_etag(data):
+    # should be different for each call
+    return hashlib.md5(data.encode('utf-8')).hexdigest()
 
 # -----------------------------------------------------------------------------
 # StudySpots
@@ -175,11 +184,11 @@ def create_studyspot(studyspot: StudySpotCreate, response: Response):
                     studyspot.amenity.outlets,
                     studyspot.amenity.seating.value if hasattr(studyspot.amenity.seating, "value") else studyspot.amenity.seating,
                     getattr(studyspot.amenity, "refreshments", None),
-                    # ✅ FIX: tolerate string or Enum values
-                    json.dumps([
-                        env.value if hasattr(env, "value") else env
-                        for env in (studyspot.amenity.environment or [])
-                    ]),
+                    # # ✅ FIX: tolerate string or Enum values
+                    # json.dumps([
+                    #     env.value if hasattr(env, "value") else env
+                    #     for env in (studyspot.amenity.environment or [])
+                    # ]),
                 )
             ),
             (
@@ -220,7 +229,8 @@ def create_studyspot(studyspot: StudySpotCreate, response: Response):
             )
         ]
 
-        spot = execute_query(queries, fetchone=True)
+        result = execute_query(queries, fetchone=True)
+        spot = result[-1][0]
         if not spot:
             raise HTTPException(status_code=500, detail="Failed to create new study spot.")
         
@@ -267,33 +277,55 @@ def create_studyspot(studyspot: StudySpotCreate, response: Response):
 @app.get("/studyspots", response_model=List[StudySpotRead], status_code=200)
 def list_studyspots(
     name: Optional[str] = Query(None),
+    neighborhood: Optional[Neighborhood] = Query(None),
     wifi: Optional[bool] = Query(None),
     outlets: Optional[bool] = Query(None),
-    seating: Optional[PositiveInt] = Query(None),
+    seating: Optional[Seating] = Query(None),
     refreshments: Optional[str] = Query(None),
-    city: Optional[str] = Query(None),
+    environment: Optional[Environment] = Query(None),
+    open_day: Optional[str] = Query(None),
+    open_now: Optional[bool] = Query(None),
 ):
+    # api for maps https://developers.google.com/maps 
+    now = datetime.now()
+    current_day = now.strftime("%a").lower()[:3]
+    current_time = now.time()
+
     try:
-        base_query = "SELECT * FROM studyspots WHERE 1=1"
+        base_query = """
+            SELECT * FROM studyspots s
+            JOIN hours h ON s.id = h.studyspot_id
+            WHERE 1=1
+        """
         params = []
+
         if name:
-            base_query += " AND name = %s"
-            params.append(name)
+            base_query += " AND name LIKE %s"
+            params.append(f"%{name}%")
+        if neighborhood: 
+            base_query += " AND neighborhood = %s"
+            params.append(neighborhood)
         if wifi is not None:
             base_query += " AND wifi_available = %s"
             params.append(wifi)
         if outlets is not None:
             base_query += " AND outlets = %s"
             params.append(outlets)
-        if seating is not None:
-            base_query += " AND seating >= %s"
+        if seating:
+            base_query += " AND seating = %s"
             params.append(seating)
         if refreshments:
             base_query += " AND refreshments LIKE %s"
             params.append(f"%{refreshments}%")
-        if city:
-            base_query += " AND city = %s"
-            params.append(city)
+        if environment:
+            base_query += " AND environment = %s"
+            params.append(environment)
+        if open_day: 
+            # base_query += " AND %s_start IS NOT NULL"
+            params.append(open_day)
+        if open_now: 
+            # base_query += " AND %s_start <= %s AND %s_end >= %s"
+            params.append((current_day, current_time, current_day, current_time))
 
         queries = [(base_query + ";", tuple(params))]
         results = execute_query(queries) or []
@@ -325,8 +357,6 @@ def list_studyspots(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-def generate_etag(data):
-    return hashlib.md5(data.encode('utf-8')).hexdigest()
 
 @app.get("/studyspots/{studyspot_id}", response_model=StudySpotRead, status_code=200)
 def get_studyspot(studyspot_id: UUID, response: Response):
@@ -345,7 +375,8 @@ def get_studyspot(studyspot_id: UUID, response: Response):
             ),
         ]
 
-        spot = execute_query(queries, fetchone=True)
+        result = execute_query(queries, fetchone=True)
+        spot = result[0]
         if not spot:
             raise HTTPException(status_code=404, detail=f"Study spot {studyspot_id} not found.")
         
@@ -475,10 +506,6 @@ def update_studyspot(studyspot_id: UUID, update: StudySpotUpdate):
             created_at=updated_spot.get("created_at"),
             updated_at=updated_spot.get("updated_at") or datetime.utcnow(),
         )
-
-
-    except HTTPException:
-        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -489,7 +516,7 @@ def delete_studyspot(studyspot_id: UUID):
         queries = [("DELETE FROM studyspots WHERE id = %s;", (str(studyspot_id),))]
         spot = execute_query(queries)
         if spot == 0:
-            raise HTTPException(status_code=404, detail=f"Study spot {str(studyspot_id,)} not found.")
+            raise HTTPException(status_code=404, detail=f"Study spot {str(studyspot_id)} not found.")
         return None
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
