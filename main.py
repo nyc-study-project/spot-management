@@ -64,7 +64,7 @@ Session = get_connection()
 # -----------------------------------------------------------------------------
 # Database Connection
 # -----------------------------------------------------------------------------
-def execute_query(queries: List[Tuple[str, tuple]], fetchone=False):
+def execute_query(queries: List[Tuple[str, dict]], fetchone=False):
     try: 
         with Session() as session, session.begin():
             results = []
@@ -75,7 +75,7 @@ def execute_query(queries: List[Tuple[str, tuple]], fetchone=False):
                     rows = result.mappings().fetchone() if fetchone else result.mappings().all()
                     results.append(rows)
                 else:
-                    results.append(result.rowcount())
+                    results.append(result.rowcount)
             return results[0] if len(results)==1 else results
 
     except Exception as e:
@@ -359,9 +359,7 @@ def list_studyspots(
 
 
 @app.get("/studyspots/{studyspot_id}", response_model=StudySpotRead, status_code=200)
-def get_studyspot(studyspot_id: UUID, response: Response):
-    etag = generate_etag(str(studyspot_id))
-
+def get_studyspot(studyspot_id: UUID, response: Response, if_none_match: Optional[str]=Header(None)):
     try:
         queries = [
             (
@@ -369,19 +367,26 @@ def get_studyspot(studyspot_id: UUID, response: Response):
                 SELECT *
                 FROM studyspots s
                 JOIN hours h ON s.id = h.studyspot_id
-                WHERE s.id = %s
+                WHERE s.id = :id
                 """, 
-                (str(studyspot_id),)
+                {"id": str(studyspot_id)}
             ),
         ]
 
-        result = execute_query(queries, fetchone=True)
-        spot = result[0]
+        spot = execute_query(queries, fetchone=True)
+
         if not spot:
             raise HTTPException(status_code=404, detail=f"Study spot {studyspot_id} not found.")
         
-        response.headers["ETag"] = f"{etag}"
-        return StudySpotRead(
+        etag_source = f"{spot['id']}-{spot.get('updated_at') or ''}"
+        etag = generate_etag(etag_source)
+
+        if if_none_match==etag:
+            return Response(status_code=304, headers={'Etag': etag})
+        
+        response.headers["ETag"] = etag
+
+        result = StudySpotRead(
             id=spot["id"],
             name=spot["name"],
             address=AddressRead(
@@ -413,6 +418,12 @@ def get_studyspot(studyspot_id: UUID, response: Response):
             created_at=spot["created_at"],
             updated_at=spot.get("updated_at") or datetime.utcnow(),
         )
+
+        return {
+            "data": result, 
+            "link_self": f"/studyspots/{studyspot_id}", 
+            "link_reviews": f"/studyspots/{studyspot_id}/reviews"
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
