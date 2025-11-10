@@ -49,9 +49,9 @@ class AmenitiesBase(BaseModel):
         description="Food and/or drinks served, optional entry. Comma separated values.",
         json_schema_extra={"example": "pastries, fruits, soda"},
     )
-    environment: list[Environment] = Field(
-        ...,
-        description="Environment of the study space",
+    environment: Optional[list[Environment]] = Field(
+        None,
+        description="Environment of the study space, optional entry.",
         json_schema_extra={"example": ["lively", "indoor"]},
     )
 
