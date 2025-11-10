@@ -31,6 +31,46 @@ from fastapi.responses import JSONResponse
 import traceback
 
 # -----------------------------------------------------------------------------
+# Create DB Queries
+# -----------------------------------------------------------------------------
+# UUID PRIMARY KEY,
+#     name TEXT NOT NULL,
+#     street TEXT,                                
+#     city TEXT,
+#     state TEXT,
+#     postal_code TEXT,
+#     latitude DOUBLE PRECISION,
+#     longitude DOUBLE PRECISION,
+#     neighborhood TEXT,
+#     wifi_available BOOLEAN,
+#     wifi_network TEXT,
+#     outlets BOOLEAN,
+#     seating TEXT,
+#     refreshments TEXT,
+#     environment JSONB,
+#     created_at TIMESTAMP DEFAULT NOW(),
+#     updated_at TIMESTAMP DEFAULT NOW()
+# );
+# CREATE TABLE hours (
+#     hour_id UUID PRIMARY KEY,
+#     studyspot_id UUID REFERENCES studyspots(id),                                
+#     mon_start TIME,
+#     mon_end TIME,
+#     tue_start TIME,
+#     tue_end TIME,
+#     wed_start TIME,
+#     wed_end TIME,
+#     thu_start TIME,
+#     thu_end TIME,
+#     fri_start TIME,
+#     fri_end TIME,
+#     sat_start TIME,
+#     sat_end TIME,
+#     sun_start TIME,
+#     sun_end TIME
+# );
+
+# -----------------------------------------------------------------------------
 # Cloud Run Connection
 # -----------------------------------------------------------------------------
 
