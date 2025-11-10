@@ -319,7 +319,6 @@ def create_studyspot(studyspot: StudySpotCreate, response: Response):
 
 
 @app.get("/studyspots", response_model=List[StudySpotResponse], status_code=200)
-# @app.get("/studyspots", response_model=List[StudySpotRead, links], status_code=200)
 def list_studyspots(
     request: Request,
     name: Optional[str] = Query(None),
