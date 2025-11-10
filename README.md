@@ -49,15 +49,22 @@ The main.py application is deployed on Cloud Run and successfully connected to a
     - Implemented RESTful endpoints using FastAPI and SQLAlchemy connected to a Cloud SQL PostgreSQL database with studyspots and hours tables.
 3. ETag Support
     - GET /studyspots/{id} supports ETag headers for caching and conditional requests (returns 304 Not Modified when appropriate).
-    ![alt text](image.png)
+    <img width="1403" height="773" alt="Screenshot 2025-11-09 at 10 48 47 PM" src="https://github.com/user-attachments/assets/dc95dbc4-9ed6-490a-b4d4-6607a471a4d8" />
+    <img width="1400" height="633" alt="Screenshot 2025-11-09 at 10 49 07 PM" src="https://github.com/user-attachments/assets/954d93d3-4146-42ad-8deb-5eebc903fbb0" />
+
 4. Query Parameters & Filters
     - Collection endpoints (e.g., GET /studyspots) support filtering by:
-        - Name, city, neighborhood, amenities (wifi, outlets, seating, refreshments), environment (JSONB array), day open and open now.
+        - Name, neighborhood, amenities (wifi, outlets, seating, refreshments), environment (JSONB array), day open and open now.
+    <img width="723" height="685" alt="Screenshot 2025-11-09 at 10 53 20 PM" src="https://github.com/user-attachments/assets/f1a65c6b-60fe-46ef-a19f-88dd24950370" />
 5. Pagination
     - Endpoints support page and page_size query parameters.
     - Responses include data and navigation links (self, review, first, prev, next, last).
+      <img width="719" height="434" alt="Screenshot 2025-11-09 at 10 53 56 PM" src="https://github.com/user-attachments/assets/93b77520-8dcb-48e8-bc6b-71350d8b0f2e" />
+
 6. POST Requests
     - POST /studyspots returns 201 Created and a Location header pointing to the newly created resource.
+      <img width="962" height="441" alt="Screenshot 2025-11-09 at 10 57 52 PM" src="https://github.com/user-attachments/assets/341253c6-e357-4720-80fa-6f3214bb6864" />
+
 7. Linked Data
     - All responses include linked data with relative paths:
         - links.self → resource itself
