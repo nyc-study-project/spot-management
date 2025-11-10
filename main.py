@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import math
 import socket
 import json
 import hashlib
@@ -11,6 +12,7 @@ from enum import Enum
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.engine import RowMapping
 from psycopg2.extras import Json
 
 from fastapi import FastAPI, HTTPException, Query, Path
@@ -169,6 +171,12 @@ class DayOfWeek(str, Enum):
     sat = "sat"
     sun = "sun"
 
+def build_url(page_number, page_size, request):
+    query_params = dict(request.query_params)
+    query_params["page"] = page_number
+    query_params["page_size"] = page_size
+    query_string = "&".join(f"{k}={v}" for k, v in query_params.items())
+    return f"{request.url.path}?{query_string}"
 # -----------------------------------------------------------------------------
 # StudySpots
 # -----------------------------------------------------------------------------
@@ -311,6 +319,7 @@ def create_studyspot(studyspot: StudySpotCreate, response: Response):
 
 
 @app.get("/studyspots", response_model=List[StudySpotResponse], status_code=200)
+# @app.get("/studyspots", response_model=List[StudySpotRead, links], status_code=200)
 def list_studyspots(
     request: Request,
     name: Optional[str] = Query(None),
@@ -330,7 +339,7 @@ def list_studyspots(
     current_time = now.time()
 
     try:
-        base_query = """
+        query = """
             SELECT * FROM studyspots s
             JOIN hours h ON s.id = h.studyspot_id
             WHERE 1=1
@@ -338,92 +347,99 @@ def list_studyspots(
         params = {"page_size": page_size, "offset": (page-1)*page_size}
 
         if name:
-            base_query += " AND name LIKE :name"
+            query += " AND name LIKE :name"
             params["name"]=f"%{name}%"
         if neighborhood: 
-            base_query += " AND neighborhood = :neighborhood"
+            query += " AND neighborhood = :neighborhood"
             params["neighborhood"] = neighborhood.value if isinstance(neighborhood, Enum) else neighborhood
         if wifi is not None:
-            base_query += " AND wifi_available = :wifi_available"
+            query += " AND wifi_available = :wifi_available"
             params["wifi_available"]=wifi
         if outlets is not None:
-            base_query += " AND outlets = :outlets"
+            query += " AND outlets = :outlets"
             params["outlets"]=outlets
         if seating:
-            base_query += " AND seating = :seating"
+            query += " AND seating = :seating"
             params["seating"] = seating.value if isinstance(seating, Enum) else seating
         if refreshments:
-            base_query += " AND refreshments LIKE :refreshments"
+            query += " AND refreshments LIKE :refreshments"
             params["refreshments"]=f"%{refreshments}%"
         if environment:
-            base_query += " AND s.environment @> :environment"
-            params["environment"] = environment.value if isinstance(environment, Enum) else environment
+            query += " AND s.environment @> :environment"
+            params["environment"] = Json(environment.value if isinstance(environment, Enum) else environment)
         if open_day: 
-            base_query += f" AND h.{open_day.value}_start IS NOT NULL"
+            query += f" AND h.{open_day.value}_start IS NOT NULL"
         if open_now: 
-            base_query += f" AND h.{current_day}_start <= :current_time AND h.{current_day}_end >= :current_time"
+            query += f" AND h.{current_day}_start <= :current_time AND h.{current_day}_end >= :current_time"
             params["current_time"] = current_time
 
-        base_query += " LIMIT :page_size OFFSET :offset"
+        base_query = query + " LIMIT :page_size OFFSET :offset"
+        count_query = "SELECT COUNT(*) AS total FROM (" + query + ") AS sub"
 
         results = execute_query([(base_query, params)]) or []
+        if isinstance(results, RowMapping):
+            results = [results]        
 
-        def build_url(page_number):
-            query_params = dict(request.query_params)
-            query_params["page"] = page_number
-            query_params["page_size"] = page_size
-            query_string = "&".join(f"{k}={v}" for k, v in query_params.items())
-            return f"{request.url.path}?{query_string}"
-
+        total_len = execute_query([(count_query, params)])["total"]
+        total_pages = max(1, math.ceil(total_len / page_size))
+        
         items = []
-        for r in results:
-            items.append({
-                "data": StudySpotRead(
-                    id=r["id"],
-                    name=r["name"],
+        links = []
+        for spot in results:
+            items.append(
+                StudySpotRead(
+                    id=spot["id"],
+                    name=spot["name"],
                     address=AddressRead(
-                        street=r.get("street"),
-                        city=r.get("city"),
-                        state=r.get("state"),
-                        postal_code=r.get("postal_code"),
-                        latitude=r.get("latitude"),
-                        longitude=r.get("longitude"),
-                        neighborhood=r.get("neighborhood"),
+                        street=spot["street"],
+                        city=spot["city"],
+                        state=spot.get("state", "NY"),
+                        postal_code=spot.get("postal_code", "00000"),
+                        latitude=spot.get("latitude"),
+                        longitude=spot.get("longitude"),
+                        neighborhood= spot.get("neighborhood"),
                     ),
                     amenity=AmenitiesRead(
-                        wifi_available=bool(r["wifi_available"]),
-                        wifi_network=r.get("wifi_network"),
-                        outlets=bool(r["outlets"]),
-                        seating=r.get("seating"),
-                        refreshments=r.get("refreshments"),
-                        environment=json.loads(r.get("environment") or "[]"),
+                        wifi_available=bool(spot["wifi_available"]),
+                        wifi_network=spot.get("wifi_network"),
+                        outlets=bool(spot["outlets"]),
+                        seating=spot["seating"],
+                        refreshments=spot["refreshments"],
+                        environment = [Environment(env) for env in spot.get("environment")],
                     ),
-                    hour=HoursBase(),
-                    created_at=r.get("created_at"),
-                    updated_at=r.get("updated_at") or datetime.utcnow(),
-                ),
-                "links": {
-                    "self": f"/studyspots/{r['id']}",
-                    "reviews": f"/studyspots/{r['id']}/reviews"
-                }
+                    hour=HoursBase(
+                        mon_start=spot["mon_start"], mon_end=spot["mon_end"],
+                        tue_start=spot["tue_start"], tue_end=spot["tue_end"],
+                        wed_start=spot["wed_start"], wed_end=spot["wed_end"],
+                        thu_start=spot["thu_start"], thu_end=spot["thu_end"],
+                        fri_start=spot["fri_start"], fri_end=spot["fri_end"],
+                        sat_start=spot["sat_start"], sat_end=spot["sat_end"],
+                        sun_start=spot["sun_start"], sun_end=spot["sun_end"],
+                    ),
+                    created_at=spot["created_at"],
+                    updated_at=spot["updated_at"],
+                )
+            )
+            links.append({
+                "self": f"/studyspots/{spot['id']}",
+                "reviews": f"/studyspots/{spot['id']}/reviews"
             })
 
-        total_items = len(results)
-        response_data = {
-            "data": items,
+        response_data = [{
+            "data": item,
             "links": {
-                "first": build_url(1),
-                "prev": build_url(page - 1) if page > 1 else None,
-                "next": build_url(page + 1) if total_items == page_size else None,
-                "last": build_url(1000)
+                "self": link["self"],
+                "reviews": link["reviews"],
+                "first": build_url(1, page_size, request),
+                "prev": build_url(page - 1, page_size, request) if page > 1 else None,
+                "next": build_url(page + 1, page_size, request) if page < total_pages else None,
+                "last": build_url(total_pages, page_size, request)
             }
-        }
-        print("hello2")
+        } for item, link in zip(items, links)]
         return response_data
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.get("/studyspots/{studyspot_id}", response_model=StudySpotResponse, status_code=200)
 def get_studyspot(studyspot_id: UUID, response: Response, if_none_match: Optional[str]=Header(None)):
@@ -494,7 +510,6 @@ def get_studyspot(studyspot_id: UUID, response: Response, if_none_match: Optiona
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 
 @app.patch("/studyspots/{studyspot_id}", response_model=StudySpotResponse, status_code=200)
@@ -628,10 +643,8 @@ def update_studyspot(
             """,
             params
         ))
-        print("hello1")
+
         spot = execute_query(queries, fetchone=True)
-        print("hello2")
-        print(spot)
 
         result = StudySpotRead(
             id=spot["id"],
