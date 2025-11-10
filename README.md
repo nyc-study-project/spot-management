@@ -4,20 +4,20 @@ This microservice manages study spots in NYC. It provides the spot name, address
 # Models 
 **studyspot.py** - Represents NYC study spots registered by user. 
 - stores name, address, amenities, hours, and created_at and updated_at timestamps.
-- in the studyspot db. 
-- has uuid which acts as the primary key.
+- stored in the studyspot db. 
+- has a uuid which acts as the primary key.
 
 **address.py** - Address of each study spot. One address per spot. 
 - stores street, city, state, zip, longitude, latitude, and neighborhood.
-- contained within the studyspot db.
+- stored in the studyspot db.
 
 **amenities.py** - Amenities provided at each study spot. One amenity per spot. 
 - stores wifi availability, wifi name, outlet availability, amount of seating, type of refreshments, type of environment.
-- contianed within the studyspot db.
+- stored in the studyspot db.
 
 **hours.py** - Hours of spot for every day of the week. One hours per spot. 
-- stores start time and end time for each day.
-- in the hours db. 
+- stores start time and end time for each day of teh week.
+- stored in the hours db. 
 - has studyspot.py PK as FK.
 
 # Endpoints 
@@ -53,20 +53,19 @@ The main.py application is deployed on Cloud Run and successfully connected to a
     <img width="1400" height="633" alt="Screenshot 2025-11-09 at 10 49 07 PM" src="https://github.com/user-attachments/assets/954d93d3-4146-42ad-8deb-5eebc903fbb0" />
 
 4. Query Parameters & Filters
-    - Collection endpoints (e.g., GET /studyspots) support filtering by:
-        - Name, neighborhood, amenities (wifi, outlets, seating, refreshments), environment (JSONB array), day open and open now.
+    - Bulk collection endpoint (GET /studyspots) supports filtering by name, neighborhood, amenities (wifi, outlets, seating, refreshments), environment (JSONB array), day open and open now.
     <img width="723" height="685" alt="Screenshot 2025-11-09 at 10 53 20 PM" src="https://github.com/user-attachments/assets/f1a65c6b-60fe-46ef-a19f-88dd24950370" />
 5. Pagination
-    - Endpoints support page and page_size query parameters.
-    - Responses include data and navigation links (self, review, first, prev, next, last).
+    - Bulk collection endpoint (GET /studyspots) supports page and page_size query parameters.
+    - Responses include data and navigation links (self, study spot review, first page, prev page, next page, last page).
       <img width="719" height="434" alt="Screenshot 2025-11-09 at 10 53 56 PM" src="https://github.com/user-attachments/assets/93b77520-8dcb-48e8-bc6b-71350d8b0f2e" />
 
 6. POST Requests
-    - POST /studyspots returns 201 Created and a Location header pointing to the newly created resource.
+    - POST /studyspots returns 201 Created and a location header pointing to the newly created resource.
       <img width="962" height="441" alt="Screenshot 2025-11-09 at 10 57 52 PM" src="https://github.com/user-attachments/assets/341253c6-e357-4720-80fa-6f3214bb6864" />
 
 7. Linked Data
-    - All responses include linked data with relative paths:
+    - All responses (execept Delete call) include linked data with relative paths:
         - links.self → resource itself
         - links.reviews → related reviews endpoint
 
@@ -75,5 +74,5 @@ The main.py application is deployed on Cloud Run and successfully connected to a
 - Implement a 202 Accepted asynchronous operation (POST /studyspots/{id}/geocode)
      - Returns 202 + Location: /jobs/{job_id}
      - Provide GET /jobs/{job_id} polling endpoint that returns {"status": "pending|running|complete", "result": {...}}
-     - OpenAPI docs showing eTag, pagination, filters, 201 + 202 async examples
+     - OpenAPI docs showing 201 + 202 async examples
 
