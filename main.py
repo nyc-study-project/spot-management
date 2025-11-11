@@ -349,10 +349,19 @@ def create_studyspot(studyspot: StudySpotCreate, response: Response):
         )
         return {
             "data": result,
-            "links": {
-                "link_studyspot": f"/studyspots/{spot_id}",
-                "link_reviews": f"/studyspots/{spot_id}/reviews"
-            }
+            "links": [
+                {
+                    "href": "self",
+                    "rel": f"/studyspots/{spot_id}",
+                    "type" : "GET"
+                }, 
+                {
+
+                    "href": "reviews",
+                    "rel": f"/studyspots/{spot_id}/reviews",
+                    "type" : "GET"
+                }
+            ]
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -466,14 +475,38 @@ def list_studyspots(
 
         response_data = [{
             "data": item,
-            "links": {
-                "self": link["self"],
-                "reviews": link["reviews"],
-                "first": build_url(1, page_size, request),
-                "prev": build_url(page - 1, page_size, request) if page > 1 else None,
-                "next": build_url(page + 1, page_size, request) if page < total_pages else None,
-                "last": build_url(total_pages, page_size, request)
-            }
+            "links": [
+                {
+                    "href": "self",
+                    "rel": link["self"],
+                    "type" : "GET"
+                }, 
+                {
+                    "href": "reviews",
+                    "rel": link["reviews"],
+                    "type" : "GET"
+                }, 
+                {
+                    "href": "first",
+                    "rel": build_url(1, page_size, request), 
+                    "type" : "GET"
+                }, 
+                {
+                    "href": "prev",
+                    "rel": build_url(page - 1, page_size, request) if page > 1 else None,
+                    "type" : "GET"
+                }, 
+                {
+                    "href": "next",
+                    "rel": build_url(page + 1, page_size, request) if page < total_pages else None, 
+                    "type" : "GET"
+                }, 
+                {
+                    "href": "last",
+                    "rel": build_url(total_pages, page_size, request), 
+                    "type" : "GET"
+                }
+            ]
         } for item, link in zip(items, links)]
         return response_data
 
@@ -542,10 +575,19 @@ def get_studyspot(studyspot_id: UUID, response: Response, if_none_match: Optiona
 
         return {
             "data": result, 
-            "links": {
-                "link_self": f"/studyspots/{studyspot_id}", 
-                "link_reviews": f"/studyspots/{studyspot_id}/reviews"
-            }
+            "links": [
+                {
+                    "href": "self",
+                    "rel": f"/studyspots/{studyspot_id}",
+                    "type" : "GET"
+                }, 
+                {
+
+                    "href": "reviews",
+                    "rel": f"/studyspots/{studyspot_id}/reviews",
+                    "type" : "GET"
+                }
+            ]
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -719,10 +761,19 @@ def update_studyspot(
         )
         return {
             "data": result, 
-            "links": {
-                "link_self": f"/studyspots/{studyspot_id}", 
-                "link_reviews": f"/studyspots/{studyspot_id}/reviews"
-            }
+            "links": [
+                {
+                    "href": "self",
+                    "rel": f"/studyspots/{studyspot_id}",
+                    "type" : "GET"
+                }, 
+                {
+
+                    "href": "reviews",
+                    "rel": f"/studyspots/{studyspot_id}/reviews",
+                    "type" : "GET"
+                }
+            ]
         }
     except HTTPException:
         raise 
