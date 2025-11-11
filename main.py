@@ -354,12 +354,6 @@ def create_studyspot(studyspot: StudySpotCreate, response: Response):
                     "href": "self",
                     "rel": f"/studyspots/{spot_id}",
                     "type" : "GET"
-                }, 
-                {
-
-                    "href": "reviews",
-                    "rel": f"/studyspots/{spot_id}/reviews",
-                    "type" : "GET"
                 }
             ]
         }
@@ -470,7 +464,6 @@ def list_studyspots(
             )
             links.append({
                 "self": f"/studyspots/{spot['id']}",
-                "reviews": f"/studyspots/{spot['id']}/reviews"
             })
 
         response_data = [{
@@ -479,11 +472,6 @@ def list_studyspots(
                 {
                     "href": "self",
                     "rel": link["self"],
-                    "type" : "GET"
-                }, 
-                {
-                    "href": "reviews",
-                    "rel": link["reviews"],
                     "type" : "GET"
                 }, 
                 {
@@ -579,12 +567,6 @@ def get_studyspot(studyspot_id: UUID, response: Response, if_none_match: Optiona
                 {
                     "href": "self",
                     "rel": f"/studyspots/{studyspot_id}",
-                    "type" : "GET"
-                }, 
-                {
-
-                    "href": "reviews",
-                    "rel": f"/studyspots/{studyspot_id}/reviews",
                     "type" : "GET"
                 }
             ]
@@ -765,12 +747,6 @@ def update_studyspot(
                 {
                     "href": "self",
                     "rel": f"/studyspots/{studyspot_id}",
-                    "type" : "GET"
-                }, 
-                {
-
-                    "href": "reviews",
-                    "rel": f"/studyspots/{studyspot_id}/reviews",
                     "type" : "GET"
                 }
             ]
