@@ -69,10 +69,12 @@ The main.py application is deployed on Cloud Run and successfully connected to a
         - links.self → resource itself
         - links.reviews → related reviews endpoint
 
+8. Asynchronous Geocoding
+    - Implemented a asynchronous operation (POST /studyspots/{id}/geocode) that triggers Google Geocoding API to update the study spot’s coordinates.
+    - The response returns 202 Accepted with a Location header pointing to the job resource (/jobs/{job_id}).
+    - A polling endpoint (GET /jobs/{job_id}) provides job status updates:
+        - {"status": "pending|running|complete|failed", "result": {...}}
+
 # TODO
 - Deploy on team's Cloud Run
-- Implement a 202 Accepted asynchronous operation (POST /studyspots/{id}/geocode)
-     - Returns 202 + Location: /jobs/{job_id}
-     - Provide GET /jobs/{job_id} polling endpoint that returns {"status": "pending|running|complete", "result": {...}}
-     - OpenAPI docs showing 201 + 202 async examples
-
+- How to automatically get geocode after creating a new studyspot and updating the street/city of an existing spot. 
