@@ -77,4 +77,8 @@ The main.py application is deployed on Cloud Run and successfully connected to a
 
 # TODO
 - Deploy on team's Cloud Run
-- How to automatically get geocode after creating a new studyspot and updating the street/city of an existing spot. 
+- Add pictures of demo data visible in Cloud SQL (Postgres) to README
+- Async Geocoding 
+    - Test connection to Google Geocode API
+    - Add pictures of OpenAPI doc showing 201 + 202 async examples to README
+    - Create code to automatically get geocode after creating a new studyspot or updating the street/city of an existing spot
