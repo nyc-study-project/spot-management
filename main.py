@@ -5,18 +5,19 @@ import math
 import socket
 import json
 import hashlib
+import requests
 from datetime import datetime, time
 from typing import Dict, List, Optional, Tuple
 from uuid import UUID, uuid4
 from enum import Enum
+from threading import Thread
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine import RowMapping
 from psycopg2.extras import Json
 
-from fastapi import FastAPI, HTTPException, Query, Path
-from pydantic import PositiveInt
+from fastapi import FastAPI, HTTPException, Query, Path, BackgroundTasks
 
 from models.hours import HoursBase
 from models.studyspot import StudySpotCreate, StudySpotRead, StudySpotUpdate, StudySpotResponse
@@ -771,6 +772,101 @@ def delete_studyspot(studyspot_id: UUID):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# -----------------------------------------------------------------------------
+# Async Geocoding
+# -----------------------------------------------------------------------------
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
+jobs = {}
+
+def run_geocode_job(job_id: str, studyspot_id: UUID):
+    jobs[job_id]["status"] = "running"
+    try: 
+        queries = [(
+            """
+            SELECT street, city, state FROM studyspots WHERE id = :id
+            """, 
+            {"id": str(studyspot_id)}
+        )]
+
+        spot = execute_query(queries, fetchone=True)
+        if not spot:
+            raise HTTPException(status_code=404, detail=f"Study spot {studyspot_id} not found.")
+        
+        street = spot["street"].replace(" ", "+")
+        city = spot["city"].replace(" ", "+")
+        state = spot["state"]
+        address = f"{street},+{city},+{state}"
+
+        url = "https://maps.googleapis.com/maps/api/geocode/json"
+        params = {"address": address, "key": GOOGLE_MAPS_API_KEY}
+        response = requests.get(url, params=params, timeout=10)
+        data = response.json()
+        if data["status"] != "OK":
+            raise Exception(f"Geocoding failed: {data.get('error_message', data['status'])}")
+
+        location = data["results"][0]["geometry"]["location"]
+        latitude = location["lat"]
+        longitude = location["lng"]
+
+        postal_code = None
+        for comp in data["results"][0]["address_components"]:
+            if "postal_code" in comp["types"]:
+                postal_code = comp["long_name"]
+                break
+        
+        query = """
+            UPDATE studyspots
+            SET latitude = :lat, longitude = :lng, updated_at = NOW()
+        """
+        
+        params = {
+                "lat": latitude, 
+                "lng": longitude, 
+                "id": str(studyspot_id)
+            }
+
+        if postal_code is not None:
+            query += ", postal_code = :postal_code"
+            params["postal_code"] = postal_code
+        query += " WHERE id = :id"
+
+        execute_query([(query, params)])
+
+        jobs[job_id]["status"] = "complete"
+        jobs[job_id]["result"] = {
+            "latitude": latitude, 
+            "longitude": longitude, 
+            "postal_code": postal_code, 
+            "message": "Geocode successful"
+        }
+
+    except Exception as e:
+        jobs[job_id]["status"] = "failed"
+        jobs[job_id]["result"] = {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/studyspots/{studyspot_id}/geocode", status_code=202)
+def post_studyspot_geocode(studyspot_id: UUID, background_tasks: BackgroundTasks, response: Response):
+    job_id = str(uuid4())
+    jobs[job_id] = {"status": "pending", "result": None}
+
+    background_tasks.add_task(run_geocode_job, job_id, studyspot_id)
+
+    response.headers["Location"] = f"/jobs/{job_id}"
+    return {"message": "Geocoding started.", "job_id": job_id}
+    
+    
+@app.get("/jobs/{job_id}", status_code=200)
+def get_job_status(job_id: str):
+    job = jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    return {
+        "job_id": job_id,
+        "status": job["status"],
+        "result": job["result"]
+    }
 
 @app.get("/")
 def root():
