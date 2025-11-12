@@ -6,6 +6,7 @@ import socket
 import json
 import hashlib
 import requests
+import httpx
 from datetime import datetime, time
 from typing import Dict, List, Optional, Tuple
 from uuid import UUID, uuid4
@@ -222,7 +223,7 @@ def build_url(page_number, page_size, request):
 # StudySpots
 # -----------------------------------------------------------------------------
 @app.post("/studyspots", response_model=StudySpotResponse, status_code=201)
-def create_studyspot(studyspot: StudySpotCreate, response: Response):
+async def create_studyspot(studyspot: StudySpotCreate, request: Request, response: Response):
     spot_id = str(uuid4())
 
     try:
@@ -315,6 +316,10 @@ def create_studyspot(studyspot: StudySpotCreate, response: Response):
         if not spot:
             raise HTTPException(status_code=500, detail="Failed to create new study spot.")
         
+        if spot["street"] and spot["city"]:
+            async with httpx.AsyncClient() as client:
+                client.post(f"{request.base_url}studyspots/{spot["id"]}/geocode")
+
         response.headers["Location"] = f"/studyspots/{spot_id}"
         result =  StudySpotRead(
             id=spot["id"],
@@ -577,7 +582,8 @@ def get_studyspot(studyspot_id: UUID, response: Response, if_none_match: Optiona
 
 
 @app.patch("/studyspots/{studyspot_id}", response_model=StudySpotResponse, status_code=200)
-def update_studyspot(
+async def update_studyspot(
+    request: Request,
     studyspot_id: UUID, 
     name: Optional[str] = Query(None),
     street: Optional[str] = Query(None),
@@ -709,6 +715,10 @@ def update_studyspot(
         ))
 
         spot = execute_query(queries, fetchone=True)
+
+        if street is not None and city is not None:
+            async with httpx.AsyncClient() as client:
+                client.post(f"{request.base_url}studyspots/{spot["id"]}/geocode")
 
         result = StudySpotRead(
             id=spot["id"],

@@ -80,5 +80,6 @@ The main.py application is deployed on Cloud Run and successfully connected to a
 - Add pictures of demo data visible in Cloud SQL (Postgres) to README
 - Async Geocoding 
     - Test connection to Google Geocode API
+    - Test to see if code works using /studyspots/{id}/geocode
+    - Test to see if /studyspots/{id}/geocode is automatically called when creating a new spot or updating the street/city of an existing spot 
     - Add pictures of OpenAPI doc showing 201 + 202 async examples to README
-    - Create code to automatically get geocode after creating a new studyspot or updating the street/city of an existing spot
