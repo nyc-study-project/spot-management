@@ -7,21 +7,21 @@ import json
 import hashlib
 import requests
 import httpx
+import googlemaps
 from datetime import datetime, time
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 from uuid import UUID, uuid4
 from enum import Enum
-from threading import Thread
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine import RowMapping
 from psycopg2.extras import Json
 
-from fastapi import FastAPI, HTTPException, Query, Path, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
 
 from models.hours import HoursBase
-from models.studyspot import StudySpotCreate, StudySpotRead, StudySpotUpdate, StudySpotResponse
+from models.studyspot import StudySpotCreate, StudySpotRead, StudySpotResponse
 from models.address import AddressRead, Neighborhood
 from models.amenities import AmenitiesRead, Seating, Environment
 from models.health import Health
@@ -311,14 +311,9 @@ async def create_studyspot(studyspot: StudySpotCreate, request: Request, respons
             )
         ]
 
-        spot = execute_query(queries, fetchone=True)
-        
+        spot = execute_query(queries, fetchone=True)  
         if not spot:
             raise HTTPException(status_code=500, detail="Failed to create new study spot.")
-        
-        if spot["street"] and spot["city"]:
-            async with httpx.AsyncClient() as client:
-                client.post(f"{request.base_url}studyspots/{spot["id"]}/geocode")
 
         response.headers["Location"] = f"/studyspots/{spot_id}"
         result =  StudySpotRead(
@@ -359,6 +354,7 @@ async def create_studyspot(studyspot: StudySpotCreate, request: Request, respons
                 {
                     "href": "self",
                     "rel": f"/studyspots/{spot_id}",
+                    "geocode": f"/studyspots/{spot_id}/geocode",
                     "type" : "GET"
                 }
             ]
@@ -625,13 +621,21 @@ async def update_studyspot(
         if street is not None:
             fields_studyspots.append("street = :street")
             params["street"] = street
+
+            latitude, longitude, postal_code = get_geocode(street=street)
+            fields_studyspots.append("latitude = :latitude")
+            params["latitude"] = latitude
+            fields_studyspots.append("longitude = :longitude")
+            params["longitude"] = longitude
+            fields_studyspots.append("postal_code = :postal_code")
+            params["postal_code"] = postal_code
+            
         if city is not None:
             fields_studyspots.append("city = :city")
             params["city"] = city
         if neighborhood is not None:
             fields_studyspots.append("neighborhood = :neighborhood")
             params["neighborhood"] = neighborhood.value if hasattr(neighborhood, "value") else neighborhood
-        # automatically change the rest of address based on street/city change
 
         # --- Amenity (partial, optional fields) ---
         if wifi_available is not None:
@@ -716,10 +720,6 @@ async def update_studyspot(
 
         spot = execute_query(queries, fetchone=True)
 
-        if street is not None and city is not None:
-            async with httpx.AsyncClient() as client:
-                client.post(f"{request.base_url}studyspots/{spot["id"]}/geocode")
-
         result = StudySpotRead(
             id=spot["id"],
             name=spot["name"],
@@ -787,6 +787,25 @@ def delete_studyspot(studyspot_id: UUID):
 # -----------------------------------------------------------------------------
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 jobs = {}
+def get_geocode(street, city="New York", state="NY"):    
+    gmaps = googlemaps.Client(key="AIzaSyCSFtzRTPO14n7CZ3vu7I4fENYZuBIe8GY")
+
+    address = f"{street}, {city}, {state}"
+    data = gmaps.geocode(address)
+    if not data:
+        raise Exception(f"Geocoding failed: no results for address '{address}'")
+    print("hello")
+    
+    location = data[0]["geometry"]["location"]
+    latitude = location["lat"]
+    longitude = location["lng"]
+
+    for comp in data[0]["address_components"]:
+        if "postal_code" in comp["types"]:
+            postal_code = comp["long_name"]
+            break
+    return latitude, longitude, postal_code
+
 
 def run_geocode_job(job_id: str, studyspot_id: UUID):
     jobs[job_id]["status"] = "running"
@@ -801,28 +820,8 @@ def run_geocode_job(job_id: str, studyspot_id: UUID):
         spot = execute_query(queries, fetchone=True)
         if not spot:
             raise HTTPException(status_code=404, detail=f"Study spot {studyspot_id} not found.")
-        
-        street = spot["street"].replace(" ", "+")
-        city = spot["city"].replace(" ", "+")
-        state = spot["state"]
-        address = f"{street},+{city},+{state}"
 
-        url = "https://maps.googleapis.com/maps/api/geocode/json"
-        params = {"address": address, "key": GOOGLE_MAPS_API_KEY}
-        response = requests.get(url, params=params, timeout=10)
-        data = response.json()
-        if data["status"] != "OK":
-            raise Exception(f"Geocoding failed: {data.get('error_message', data['status'])}")
-
-        location = data["results"][0]["geometry"]["location"]
-        latitude = location["lat"]
-        longitude = location["lng"]
-
-        postal_code = None
-        for comp in data["results"][0]["address_components"]:
-            if "postal_code" in comp["types"]:
-                postal_code = comp["long_name"]
-                break
+        latitude, longitude, postal_code = get_geocode(spot["street"], spot["city"], spot["state"])
         
         query = """
             UPDATE studyspots

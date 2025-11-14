@@ -294,4 +294,4 @@ class StudySpotRead(StudySpotBase):
 
 class StudySpotResponse(BaseModel):
     data: StudySpotRead
-    links: dict
+    links: list
