@@ -80,6 +80,8 @@ The main.py application is deployed on Cloud Run and successfully connected to a
         - The response returns 202 Accepted with a Location header pointing to the job resource (/jobs/{job_id}).
     - A polling endpoint (GET /jobs/{job_id}) provides job status updates:
         - {"status": "pending|running|complete|failed", "result": {...}}
+<img width="1146" height="734" alt="Screenshot 2025-11-14 at 4 00 07 PM" src="https://github.com/user-attachments/assets/5a3f49fb-3afc-496f-8cba-fc94275e7f40" />
+<img width="1146" height="764" alt="Screenshot 2025-11-14 at 4 00 27 PM" src="https://github.com/user-attachments/assets/91b0e4e6-2f7c-466c-8132-99019b328920" />
 
 9. Automatic Geocoding for Updated Studyspot Addresses
     - If a particular studyspot's street address is updated in the PATCH call, its latitude, longitude, and postal code is automatically updated. 
