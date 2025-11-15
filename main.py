@@ -788,7 +788,7 @@ def delete_studyspot(studyspot_id: UUID):
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 jobs = {}
 def get_geocode(street, city="New York", state="NY"):    
-    gmaps = googlemaps.Client(key="AIzaSyCSFtzRTPO14n7CZ3vu7I4fENYZuBIe8GY")
+    gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
 
     address = f"{street}, {city}, {state}"
     data = gmaps.geocode(address)
