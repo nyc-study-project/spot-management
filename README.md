@@ -85,7 +85,3 @@ The main.py application is deployed on Cloud Run and successfully connected to a
 
 9. Automatic Geocoding for Updated Studyspot Addresses
     - If a particular studyspot's street address is updated in the PATCH call, its latitude, longitude, and postal code is automatically updated. 
-
-# TODO
-- Deploy on team's Cloud Run
-- Add pictures of demo data visible in Cloud SQL (Postgres) to README
