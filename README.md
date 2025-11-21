@@ -42,8 +42,6 @@ All models are made. All Endpoints are locally created.
 # Sprint 2
 The main.py application is deployed on Cloud Run and successfully connected to a Cloud SQL PostgreSQL instance hosting the spot-management database, which includes the studyspots and hours tables.
 
-### Demo Data in Cloud SQL (Postgres) TODO
-
 ### Implemented Features
 1. Containerization and Deployment
     - Application is containerized with a Dockerfile and deployed to Cloud Run.
