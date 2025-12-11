@@ -32,45 +32,6 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 import traceback
 
-# -----------------------------------------------------------------------------
-# Create DB Queries
-# -----------------------------------------------------------------------------
-# UUID PRIMARY KEY,
-#     name TEXT NOT NULL,
-#     street TEXT,                                
-#     city TEXT,
-#     state TEXT,
-#     postal_code TEXT,
-#     latitude DOUBLE PRECISION,
-#     longitude DOUBLE PRECISION,
-#     neighborhood TEXT,
-#     wifi_available BOOLEAN,
-#     wifi_network TEXT,
-#     outlets BOOLEAN,
-#     seating TEXT,
-#     refreshments TEXT,
-#     environment JSONB,
-#     created_at TIMESTAMP DEFAULT NOW(),
-#     updated_at TIMESTAMP DEFAULT NOW()
-# );
-# CREATE TABLE hours (
-#     hour_id UUID PRIMARY KEY,
-#     studyspot_id UUID REFERENCES studyspots(id),                                
-#     mon_start TIME,
-#     mon_end TIME,
-#     tue_start TIME,
-#     tue_end TIME,
-#     wed_start TIME,
-#     wed_end TIME,
-#     thu_start TIME,
-#     thu_end TIME,
-#     fri_start TIME,
-#     fri_end TIME,
-#     sat_start TIME,
-#     sat_end TIME,
-#     sun_start TIME,
-#     sun_end TIME
-# );
 
 # -----------------------------------------------------------------------------
 # Cloud Run Connection
@@ -81,23 +42,23 @@ def get_connection():
         env = os.environ.get("ENV", "local")
 
         if env == "local":
-            user = "erikoy"
-            password = "columbia25"
+            user = os.environ.get("DB_USER", "")
+            password = os.environ.get("DB_PASS", "")
             host = "127.0.0.1"
             port = 5432
             database = "spot_db"
+            connection_str = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}"
 
-            connection_str = (f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}")
         else:
-            user=os.environ["DB_USER"]
-            password=os.environ["DB_PASS"]
-            database=os.environ["DB_NAME"]
-            unix_socket=f"/cloudsql/{os.environ['INSTANCE_CONNECTION_NAME']}"
-
+            user = os.environ["DB_USER"]
+            password = os.environ["DB_PASS"]
+            database = os.environ["DB_NAME"]
+            unix_socket = f"/cloudsql/{os.environ['INSTANCE_CONNECTION_NAME']}"
             connection_str = (
                 f"postgresql+psycopg2://{user}:{password}@/{database}"
                 f"?host={unix_socket}"
             )
+
         engine = create_engine(connection_str, pool_pre_ping=True)
         Session = sessionmaker(bind=engine, autocommit=False, autoflush=False)
         return Session
@@ -159,7 +120,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         status_code=422,
         content={
             "detail": exc.errors(),
-            "body": body,  # include raw body in response to debug shape
+            "body": body, 
         },
     )
 
@@ -200,7 +161,6 @@ def get_health_with_path(path_echo: str, echo: str | None = Query(None)):
 # Utility
 # -----------------------------------------------------------------------------
 def generate_etag(data):
-    # should be different for each call
     return hashlib.md5(data.encode('utf-8')).hexdigest()
 
 class DayOfWeek(str, Enum):
@@ -793,7 +753,6 @@ def get_geocode(street, city="New York", state="NY"):
     data = gmaps.geocode(address)
     if not data:
         raise Exception(f"Geocoding failed: no results for address '{address}'")
-    print("hello")
     
     location = data[0]["geometry"]["location"]
     latitude = location["lat"]
